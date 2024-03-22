@@ -50,33 +50,45 @@ http://localhost/api/ingredients/{id}/
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from api import views
-from users import views  # UserViewSet, TokenLoginView, TokenLogoutView
-from api.views import TagViewSet, RecipeViewSet, IngredientViewSet, ShoppingCartViewSet, SubscriptionViewSet, FavoriteViewSet
+from users.views import UsersViewSet, TokenLoginView, TokenLogoutView
+from api.views import (
+    TagViewSet,
+    RecipeViewSet,
+    IngredientViewSet,
+    ShoppingCartViewSet,
+    SubscriptionViewSet,
+    FavoriteViewSet,
+    SubscribeViewSet,
+)
+
 app_name = "api"
 
 
 router_v1 = DefaultRouter()
-router_v1.register("users", views.UsersViewSet, basename="users")
-router_v1.register('tags', TagViewSet, basename='tags')
-router_v1.register('recipes', RecipeViewSet, basename='recipes')
+router_v1.register("users", UsersViewSet, basename="users")
+router_v1.register("tags", TagViewSet, basename="tags")
+router_v1.register("recipes", RecipeViewSet, basename="recipes")
 router_v1.register("ingredients", IngredientViewSet, basename="ingredients")
-router_v1.register(r'shopping_cart', ShoppingCartViewSet, basename='shopping_cart')
-router_v1.register(r'favorite', FavoriteViewSet, basename='favorite')
-router_v1.register(r'subscriptions', SubscriptionViewSet, basename='subscriptions')
+router_v1.register(r"shopping_cart", ShoppingCartViewSet, basename="shopping_cart")
+router_v1.register(r"favorite", FavoriteViewSet, basename="favorite")
+router_v1.register(r"subscriptions", SubscriptionViewSet, basename="subscriptions")
 
-# router_v1.register(
-#     r'titles/(?P<title_id>\d+)/reviews/(?P<review_id>\d+)/comments',
+router_v1.register(r'users/(?P<title_id>\d+)/subscribe/', SubscribeViewSet, basename="subscribe")
 #     CommentViewSet,
 #     basename='comments',
 # )
 
 urlpatterns = [
     path("", include(router_v1.urls)),
-    path('auth/token/', include([
-        path('login/',  views.TokenLoginView.as_view(), name='token_login'),
-        path('logout/', views.TokenLogoutView.as_view(), name='token_logout'),
-    ])),
+    path(
+        "auth/token/",
+        include(
+            [
+                path("login/", TokenLoginView.as_view(), name="token_login"),
+                path("logout/", TokenLogoutView.as_view(), name="token_logout"),
+            ]
+        ),
+    ),
 ]
 
 # urlpatterns = [
