@@ -2,10 +2,15 @@ from django.contrib.auth import get_user_model
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.views import APIView
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
-from users.serializers import UsersSerializer
+from users.serializers import (
+    UsersSerializer,
+    UserCreateSerializer,
+    SubscriptionSerializer,
+)
+from food.models import Subscription
 
 User = get_user_model()
 
@@ -15,6 +20,7 @@ class UsersViewSet(ModelViewSet):
     Пользователи
     http://localhost/api/users/
     http://localhost/api/users/{id}/
+
     http://localhost/api/users/me/
     http://localhost/api/users/set_password/
     Подписки
@@ -26,6 +32,7 @@ class UsersViewSet(ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UsersSerializer
     http_method_names = ["GET", "POST", "DEL"]
+    permission_classes = IsAuthenticated
 
     @action(
         methods=["GET"],
@@ -34,7 +41,7 @@ class UsersViewSet(ModelViewSet):
     )
     def me(self, request):
         """получение профиля автора."""
-        user = self.request.user
+        user = request.user
         serializer = UsersSerializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -55,6 +62,14 @@ class UsersViewSet(ModelViewSet):
         """Возвращает пользователей,
         на которых подписан текущий пользователь.
         В выдачу добавляются рецепты.."""
+        user = request.user
+        subscription = Subscription.objects.filter(user=user)
+        serializer = SubscriptionSerializer(
+            subscription,
+            manyu=True,
+        )
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(
         methods=["POST", "DEL"],

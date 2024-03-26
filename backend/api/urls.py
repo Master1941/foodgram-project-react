@@ -55,10 +55,10 @@ from api.views import (
     TagViewSet,
     RecipeViewSet,
     IngredientViewSet,
-    ShoppingCartViewSet,
-    SubscriptionViewSet,
-    FavoriteViewSet,
-    SubscribeViewSet,
+#     ShoppingCartViewSet,
+#     SubscriptionViewSet,
+#     FavoriteViewSet,
+#     SubscribeViewSet,
 )
 
 app_name = "api"
@@ -69,23 +69,13 @@ router_v1.register("users", UsersViewSet, basename="users")
 router_v1.register("tags", TagViewSet, basename="tags")
 router_v1.register("recipes", RecipeViewSet, basename="recipes")
 router_v1.register("ingredients", IngredientViewSet, basename="ingredients")
-router_v1.register(
-    r"shopping_cart",
-    ShoppingCartViewSet,
-    basename="shopping_cart",
-)
-router_v1.register("favorite", FavoriteViewSet, basename="favorite")
-router_v1.register(
-    r"subscriptions",
-    SubscriptionViewSet,
-    basename="subscriptions",
-)
 
-router_v1.register(
-    r"users/(?P<title_id>\d+)/subscribe/",
-    SubscribeViewSet,
-    basename="subscribe",
-)
+# router_v1.register(r"shopping_cart", ShoppingCartViewSet, basename="shopping_cart")
+# router_v1.register("favorite", FavoriteViewSet, basename="favorite")
+# router_v1.register(r"subscriptions", SubscriptionViewSet, basename="subscriptions")
+# router_v1.register(
+#     r"users/(?P<title_id>\d+)/subscribe/", SubscribeViewSet, basename="subscribe"
+# )
 
 
 urlpatterns = [
@@ -95,7 +85,7 @@ urlpatterns = [
         include(
             [
                 path("login/", TokenLoginView.as_view(), name="token_login"),
-                path("logout/", TokenLogoutView.as_view(), name="token_logout")
+                path("logout/", TokenLogoutView.as_view(), name="token_logout"),
             ]
         ),
     ),

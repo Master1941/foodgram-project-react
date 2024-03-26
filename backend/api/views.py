@@ -9,7 +9,7 @@
 from rest_framework.viewsets import ModelViewSet
 
 from rest_framework.permissions import IsAuthenticated
-
+from rest_framework.decorators import action
 from api.serializers import (
     TagSerializer,
     RecipeSerializer,
@@ -23,6 +23,14 @@ from food.models import (
     ShoppingList,
     Subscription,
 )
+
+
+class IngredientViewSet(ModelViewSet):
+    """GET Список ингредиентов
+    GET Получение ингредиента"""
+
+    queryset = Ingredient.objects.all()
+    serializer_class = IngredientSerializer
 
 
 class TagViewSet(ModelViewSet):
@@ -45,6 +53,37 @@ class RecipeViewSet(ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
+
+    @action(
+        methods=["GET"],
+        detail=False,
+        permission_classes=[IsAuthenticated],
+    )
+    def download_shopping_cart(self, request):
+        """Скачать файл со списком покупок. Это может быть TXT/PDF/CSV.
+        Важно, чтобы контент файла удовлетворял требованиям задания.
+        Доступно только авторизованным пользователям."""
+        # user = request.user
+        # serializer = UsersSerializer(user)
+        # return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(
+        methods=["GET"],
+        detail=True,
+        permission_classes=[IsAuthenticated],
+    )
+    def shopping_cart(self, request):
+        """POST        Добавить рецепт в список покупок
+        DEL        Удалить рецепт из списка покупок"""
+
+    @action(
+        methods=["GET"],
+        detail=True,
+        permission_classes=[IsAuthenticated],
+    )
+    def favorite(self, request):
+        """POST  Добавить рецепт в избранное
+        DEL  Удалить рецепт из избранного"""
 
 
 class ShoppingCartViewSet(ModelViewSet):
@@ -75,11 +114,3 @@ class SubscribeViewSet(ModelViewSet):
     """POST  Подписаться на пользователя
     DEL  Отписаться от пользователя
     Доступно только авторизованным пользователям"""
-
-
-class IngredientViewSet(ModelViewSet):
-    """GET Список ингредиентов
-    GET Получение ингредиента"""
-
-    queryset = Ingredient.objects.all()
-    serializer_class = IngredientSerializer

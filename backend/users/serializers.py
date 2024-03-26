@@ -1,10 +1,8 @@
+from rest_framework import serializers
 from rest_framework.serializers import (
     SerializerMethodField,
-    Serializer,
     ModelSerializer,
     CharField,
-    RegexField,
-    EmailField,
 )
 from django.contrib.auth import get_user_model
 from food.constants import (
@@ -18,9 +16,9 @@ User = get_user_model()
 
 
 class UsersSerializer(ModelSerializer):
-    """ """
+    """Серилизатор"""
 
-    is_subscribed = SerializerMethodField()
+    # is_subscribed = SerializerMethodField()
 
     class Meta:
         model = User
@@ -30,15 +28,36 @@ class UsersSerializer(ModelSerializer):
             "username",
             "first_name",
             "last_name",
-            "is_subscribed",  # есть в гет запросе
+            # "is_subscribed",  # есть в гет запросе
         )
 
-    def get_is_subscraiber(self):
-        """ """
+    # def get_is_subscraiber(self):
+    #     """Возврвщает False если не подписан на этого пользователя."""
 
 
-class SubscribeSerializer(Serializer):
-    """ """
+class UserCreateSerializer(ModelSerializer):
+    """Серилизатор"""
+
+    class Meta:
+        model = User
+        fields = (
+            "email",
+            "username",
+            "first_name",
+            "last_name",
+            "password",
+        )
+
+    def validate_username(self, value):
+        if value == "me":
+            raise serializers.ValidationError(
+                'Имя пользователя "me" запрещено.',
+            )
+        return value
+
+
+class SubscriptionSerializer(ModelSerializer):
+    """Серилизатор"""
 
     is_subscribed = SerializerMethodField()
     recipes = SerializerMethodField()
@@ -57,9 +76,18 @@ class SubscribeSerializer(Serializer):
             "recipes_count",
         )
 
+    def get_is_subscraiber(self):
+        """ """
 
-class TokenSerializer(Serializer):
-    """ """
+    def get_recipes(self):
+        """ """
+
+    def get_recipes_count(self):
+        """ """
+
+
+class TokenSerializer(ModelSerializer):
+    """Серилизатор"""
 
     username = CharField(required=True)
     confirmation_code = CharField(required=True)
@@ -67,33 +95,3 @@ class TokenSerializer(Serializer):
     class Meta:
         model = User
         fields = ("username", "confirmation_code")
-
-
-class UserCreateSerializer(ModelSerializer):
-    """ """
-
-    username = RegexField(
-        regex=r"^[\w.@+-]+$", max_length=USERNAME_MAX_LENGTH, required=True
-    )
-
-    email = EmailField(
-        max_length=EMAIL_MAX_LENGTH,
-        required=True,
-    )
-
-    class Meta:
-        model = User
-        fields = (
-            "username",
-            "email",
-            "first_name",
-            "last_name",
-            "password",
-        )
-
-    def validate_username(self, value):
-        if value == "me":
-            raise serializers.ValidationError(
-                'Имя пользователя "me" запрещено.',
-            )
-        return value
