@@ -1,9 +1,13 @@
 """
 Вьюсеты
-Если вы решите использовать вьюсеты, то вам потребуется добавлять дополнительные action.
-Не забывайте о том, что для разных action сериализаторы и уровни доступа (permissions) могут отличаться.
+Если вы решите использовать вьюсеты,
+то вам потребуется добавлять дополнительные action.
 
-Некоторые методы, в том числе и action, могут быть похожи друг на друга. Избегайте дублирующегося кода.
+Не забывайте о том, что для разных action сериализаторы и
+уровни доступа (permissions) могут отличаться.
+
+Некоторые методы, в том числе и action,
+могут быть похожи друг на друга. Избегайте дублирующегося кода.
 """
 
 from rest_framework.viewsets import ModelViewSet
@@ -14,14 +18,17 @@ from api.serializers import (
     TagSerializer,
     RecipeSerializer,
     IngredientSerializer,
+    RecipeGetSerializer,
+    RecipeCreatSerializer,
 )
 from food.models import (
     Tag,
     Recipe,
     Ingredient,
-    Favourites,
-    ShoppingList,
-    Subscription,
+    # Favourites,
+    # ShoppingList,
+    # Subscription,
+    # RecipeIngredient,
 )
 
 
@@ -42,7 +49,7 @@ class TagViewSet(ModelViewSet):
 
 
 class RecipeViewSet(ModelViewSet):
-    """GET      Список рецептов
+    """GET  Список рецептов
     POST    Создание рецепта
     GET     Получение рецепта
     PATCH   Обновление рецепта
@@ -64,53 +71,40 @@ class RecipeViewSet(ModelViewSet):
         Важно, чтобы контент файла удовлетворял требованиям задания.
         Доступно только авторизованным пользователям."""
         # user = request.user
+
+        # RecipeIngredient.objects.filter(
+        #     recipe__shopping_list__user=request.user
+        # ).values("recipe__name", "recip__mesuremet_unit").annotation(
+        #     amount_sum=Sum("amount")
+        # )
+
         # serializer = UsersSerializer(user)
         # return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(
-        methods=["GET"],
+        methods=["GET", "DEL"],
         detail=True,
         permission_classes=[IsAuthenticated],
     )
     def shopping_cart(self, request):
-        """POST        Добавить рецепт в список покупок
-        DEL        Удалить рецепт из списка покупок"""
+        """POST  Добавить рецепт в список покупок
+        DEL     Удалить рецепт из списка покупок"""
 
     @action(
-        methods=["GET"],
+        methods=["GET", "DEL"],
         detail=True,
         permission_classes=[IsAuthenticated],
     )
-    def favorite(self, request):
+    def favorite(self, request, **kwargs):
         """POST  Добавить рецепт в избранное
         DEL  Удалить рецепт из избранного"""
 
+    def get_serislizer_class(self):
+        """будет использоваться сериализатор `RecipeGetSerializer`
+        а для остальных методов будет использоваться `RecipeCreateSerializer`"""
 
-class ShoppingCartViewSet(ModelViewSet):
-    """POST  Добавить рецепт в список покупок
-    DEL  Удалить рецепт из списка покупок"""
-
-
-class DownloadShoppingCartViewSet(ModelViewSet):
-    """Скачать файл со списком покупок.
-    Это может быть TXT/PDF/CSV.
-    Важно, чтобы контент файла удовлетворял требованиям задания.
-    Доступно только авторизованным пользователям."""
-
-    # permission_classes = [IsAuthenticated]
-
-
-class FavoriteViewSet(ModelViewSet):
-    """POST  Добавить рецепт в избранное
-    DEL Удалить рецепт из избранного"""
-
-
-class SubscriptionViewSet(ModelViewSet):
-    """Возвращает пользователей, на которых подписан текущий пользователь.
-    В выдачу добавляются рецепты."""
-
-
-class SubscribeViewSet(ModelViewSet):
-    """POST  Подписаться на пользователя
-    DEL  Отписаться от пользователя
-    Доступно только авторизованным пользователям"""
+        # Если действие (action) — получение списка объектов ('list')
+        if self.action == "list":
+            # ...то применяем CatListSerializer
+            return RecipeGetSerializer
+        return RecipeCreatSerializer

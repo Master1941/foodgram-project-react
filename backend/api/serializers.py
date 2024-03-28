@@ -17,28 +17,29 @@
 """
 
 import base64
-import webcolors
 from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
 from rest_framework.serializers import (
     ModelSerializer,
     ImageField,
-    SlugRelatedField,
+    StringRelatedField,
+    SlugRelatedField,  # получить строковые представления связанных объектов и передать их в указанное поле вместо id.
     ValidationError,
     CurrentUserDefault,
-    SerializerMethodField,  # для создания дополнительных полей в сериализаторе, значения которых вычисляются с помощью метода сериализатора.
+    SerializerMethodField,  # для создания дополнительных полей
     ValidationError,
     Field,
 )
 from rest_framework.validators import UniqueTogetherValidator
 
-from food.models import Tag, Recipe, Ingredient, Subscription
+from food.models import Tag, Recipe, Ingredient, Favourites, RecipeIngredient
+from users.serializers import UsersSerializer
 
 User = get_user_model()
 
 
 class Base64ImageField(ImageField):
-    """ """
+    """Кодирует картинку в строку base64."""
 
     def to_internal_value(self, data):
         if isinstance(data, str) and data.startswith("data:image"):
@@ -51,77 +52,133 @@ class Base64ImageField(ImageField):
 
 
 class TagSerializer(ModelSerializer):
-    """ """
+    """Cериализатор модели Tags."""
 
     class Meta:
         model = Tag
-        fields = "__all__"
+        fields = ("id", "name", "color", "slug")
         read_only_fields = ("__all__",)
 
 
-class RecipeSerializer(ModelSerializer):
+class FavoriteSerializer(ModelSerializer):
     """ """
 
-    image = Base64ImageField(required=False, allow_null=True)
+    class Meta:
+        model = Favourites
+        fields = (
+            "id",
+            "name",
+            "image",
+            "cooking_time",
+        )
+
+
+class RecipeGetSerializer(ModelSerializer):
+    """Cериализатор модели"""
+
+
+class RecipeCreatSerializer(ModelSerializer):
+    """Для сохранения ингредиентов и тегов рецепта потребуется
+    переопределить методы create и update в ModelSerializer."""
 
     class Meta:
         model = Recipe
-        fields = "__all__"
-
-    def update(self, instance, validated_data):
-        instance.name = validated_data.get("name", instance.name)
-        instance.color = validated_data.get("color", instance.color)
-        instance.birth_year = validated_data.get("birth_year", instance.birth_year)
-        instance.image = validated_data.get("image", instance.image)
-        if "achievements" in validated_data:
-            achievements_data = validated_data.pop("achievements")
-            lst = []
-            for achievement in achievements_data:
-                current_achievement, status = Achievement.objects.get_or_create(
-                    **achievement
-                )
-                lst.append(current_achievement)
-            instance.achievements.set(lst)
-
-        instance.save()
-        return instance
+        fields = (
+            "ingredients",
+            # id": 1123,
+            # "amount": 10
+            "tags",
+            # 1,
+            # 2
+            "image",
+            "name",
+            "text",
+            "cooking_time",
+        )
 
 
 class IngredientSerializer(ModelSerializer):
-    """ """
+    """Cериализатор модели"""
 
     class Meta:
         model = Ingredient
-        fields = "__all__"
+        fields = ("id", "name", "measurement_unit")
 
 
-class SubscribeSerializer(ModelSerializer):
-    """Серилизатор подписок."""
+class RecipeSerializer(ModelSerializer):
+    """Cериализатор модели"""
 
-    user = SlugRelatedField(
-        slug_field="username",
-        read_only=True,
-        default=CurrentUserDefault(),
-    )
-    subscribed_user = SlugRelatedField(
-        slug_field="username",
-        queryset=User.objects.all(),
-    )
+    image = Base64ImageField(required=False, allow_null=True)
+    tags = StringRelatedField(many=True, read_only=True)
+    author = UsersSerializer()
+    ingredients = IngredientSerializer()
+    is_favorited = SerializerMethodField()
+    is_in_shopping_cart = SerializerMethodField()
 
     class Meta:
-        model = Subscription
-        fields = ("user", "subscribed_user")
-        validators = [
-            UniqueTogetherValidator(
-                queryset=Subscription.objects.all(),
-                fields=("user", "subscribed_user"),
-                message=("Вы уже подписаны на этого автора!"),
-            )
-        ]
+        model = Recipe
+        fields = (
+            "id",
+            "tags",
+            # "id": 0,
+            # "name": "Завтрак",
+            # "color": "#E26C2D",
+            # "slug": "breakfast"
+            "author",
+            # "email": "user@example.com",
+            # "id": 0,
+            # "username": "string",
+            # "first_name": "Вася",
+            # "last_name": "Пупкин",
+            # "is_subscribed": false
+            "ingredients",
+            # "id": 0,
+            # "name": "Картофель отварной",
+            # "measurement_unit": "г",
+            # "amount": 1
+            "is_favorited",
+            "is_in_shopping_cart",
+            "name",
+            "image",
+            "text",
+            "cooking_time",
+        )
 
-    def validate_following(self, value):
-        """Запрет подписки на самого себя."""
+    def is_favorited(self):
+        """ """
 
-        if value == self.context["request"].user:
-            raise ValidationError("Нельзя подписаться на самого себя!")
-        return value
+    def is_in_shopping_cart(self):
+        """ """
+
+    def create(self, validated_data):
+        """Спринт 10/17 → Тема 1/3: Django Rest Framework → Урок 9/15"""
+        if "tag" not in self.initial_data:
+            post = Recipe.objects.create(**validated_data)
+            return post
+        tags_data = validated_data.pop("tag")
+        post = Recipe.objects.create(**validated_data)
+        for tag_data in tags_data:
+            tag, _ = Tag.objects.get_or_create(**tag_data)
+            TagRecipe.objects.create(tag=tag, post=post)
+        return post
+
+    # def update(self, instance, validated_data):
+    #     """Для сохранения ингредиентов и тегов рецепта потребуется
+    #     переопределить методы create и update в ModelSerializer. """
+
+    #     instance.name = validated_data.get("name", instance.name)
+    #     instance.color = validated_data.get("color", instance.color)
+    #     instance.birth_year = validated_data.get("birth_year", instance.birth_year)
+    #     instance.image = validated_data.get("image", instance.image)
+    #     if "achievements" in validated_data:
+    #         achievements_data = validated_data.pop("achievements")
+    #         lst = []
+    #         for achievement in achievements_data:
+    #             current_achievement, status = Achievement.objects.get_or_create(
+    #                 **achievement
+    #             )
+    #             lst.append(current_achievement)
+    #         instance.achievements.set(lst)
+
+    #     instance.save()
+    #     return instance

@@ -31,9 +31,19 @@ class UsersViewSet(ModelViewSet):
 
     queryset = User.objects.all()
     serializer_class = UsersSerializer
-    http_method_names = ["GET", "POST", "DEL"]
-    permission_classes = IsAuthenticated
+    # http_method_names = ["GET", "POST", "DEL"]
+    permission_classes = (AllowAny,)
 
+    def get_serislizer_class(self):
+        """будет использоваться сериализатор `RecipeGetSerializer`
+        а для остальных методов будет использоваться `RecipeCreateSerializer`"""
+
+        # Если действие (action) — получение списка объектов ('list')
+        if self.action in ("retrieve", "list"):
+            # ...то применяем CatListSerializer
+            return UsersSerializer
+        return UserCreateSerializer
+    
     @action(
         methods=["GET"],
         detail=False,
@@ -79,12 +89,3 @@ class UsersViewSet(ModelViewSet):
     def subscribe(self, request):
         """POST Подписаться на пользователя
         DEL  Отписаться от пользователя."""
-
-
-class TokenLoginView(APIView):
-    """Используется для авторизации по емейлу и паролю,
-    чтобы далее использовать токен при запросах."""
-
-
-class TokenLogoutView(APIView):
-    """Удаляет токен текущего пользователя."""

@@ -13,7 +13,7 @@ SECRET_KEY = os.getenv("SECRET_KEY", "key")
 DEBUG = os.getenv("DEBUG", "True") == "True"
 
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1 localhost").split()
-print(ALLOWED_HOSTS)
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -23,8 +23,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "django_filters",
-    "rest_framework_simplejwt",
-    "rest_framework_simplejwt.token_blacklist",
+    "rest_framework.authtoken",
+    "djoser",
     "api.apps.ApiConfig",
     "food.apps.FoodConfig",
     "users.apps.UsersConfig",
@@ -67,7 +67,6 @@ TEST_DATABASES = {
     }
 }
 
-
 PROD_DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
@@ -75,11 +74,13 @@ PROD_DATABASES = {
         "USER": os.getenv("POSTGRES_USER", "kittygram_user"),
         "PASSWORD": os.getenv("POSTGRES_PASSWORD", ""),
         "HOST": os.getenv("DB_HOST", ""),
-        "PORT": os.getenv("DB_PORT", 5432),
+        "PORT": os.getenv("DB_PORT", "5432"),
     }
 }
 
-DATABASES = TEST_DATABASES if os.getenv("TEST_DATABASES", default="False") == "True" else PROD_DATABASES
+DATABASES = (
+    TEST_DATABASES if os.getenv("TEST_DATABASES", default="False") == "True" else PROD_DATABASES
+)
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -107,11 +108,10 @@ USE_L10N = True
 USE_TZ = True
 
 STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "collected_static"
 
-# STATIC_ROOT = BASE_DIR / "collected_static"
-
-# MEDIA_URL = "/media/"
-# MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 STATICFILES_DIRS = ((BASE_DIR / "static/"),)
 
@@ -119,14 +119,26 @@ AUTH_USER_MODEL = "users.CustomUser"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# DJOSER = {
+#     'HIDE_USERS': False,
+#     'SERIALIZERS': {},
+#     'PERMISSIONS': {},
+#     'JWT_AUTH_COOKIE': None,
+# }
 
 REST_FRAMEWORK = {
-    # "DEFAULT_PERMISSION_CLASSES": [
-    #     "rest_framework.permissions.IsAuthenticated",
-    # ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticatedOrReadOnly",
+    ],
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.TokenAuthentication",
     ],
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
-    "PAGE_SIZE": 10,
 }
+
+# SIMPLE_JWT = {
+#     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+#     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+#     'ROTATE_REFRESH_TOKENS': False,
+#     'BLACKLIST_AFTER_ROTATION': True,
+#     'UPDATE_LAST_LOGIN': False,
+# }
