@@ -5,7 +5,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv("SECRET_KEY", "key")
@@ -79,7 +78,9 @@ PROD_DATABASES = {
 }
 
 DATABASES = (
-    TEST_DATABASES if os.getenv("TEST_DATABASES", default="False") == "True" else PROD_DATABASES
+    TEST_DATABASES
+    if os.getenv("TEST_DATABASES", default="False") == "True"
+    else PROD_DATABASES
 )
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -119,26 +120,20 @@ AUTH_USER_MODEL = "users.CustomUser"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# DJOSER = {
-#     'HIDE_USERS': False,
-#     'SERIALIZERS': {},
-#     'PERMISSIONS': {},
-#     'JWT_AUTH_COOKIE': None,
-# }
+DJOSER = {
+    "LOGIN_FIELD": "email",  # авторизация по  email  !!!!!!!!!!!!!!!!!!!!!!!!
+    'SEND_ACTIVATION_EMAIL': False,  # Отправлять ли пользователям электронное письмо с активацией после регистрации.
+}
 
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticatedOrReadOnly",
     ],
+    # AllowAny — всё разрешено, любой пользователь (и даже аноним) может выполнить любой запрос.
+    # IsAuthenticated — только аутентифицированные пользователи имеют доступ к API и могут выполнить любой запрос. Остальным вернётся ответ "401 Unauthorized".
+    # IsAuthenticatedOrReadOnly — то же, что и в предыдущем доступе, но анонимы могут делать запросы на чтение; запросы на создание, удаление или редактирование информации доступны только аутентифицированным пользователям.
+    # IsAdminUser — выполнение запросов запрещено всем, кроме пользователей с правами администратора, тех, для которых свойство user.is_staff равно True.
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.TokenAuthentication",
     ],
 }
-
-# SIMPLE_JWT = {
-#     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
-#     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-#     'ROTATE_REFRESH_TOKENS': False,
-#     'BLACKLIST_AFTER_ROTATION': True,
-#     'UPDATE_LAST_LOGIN': False,
-# }

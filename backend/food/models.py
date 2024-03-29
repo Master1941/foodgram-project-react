@@ -32,7 +32,7 @@ class Tag(models.Model):
         max_length=NAME_MAX_LENGTH,
         unique=True,
     )
-    color_code = models.CharField(
+    color = models.CharField(
         "Цветовой код",
         max_length=COLOR_CODE_MAX_LENGTH,
     )

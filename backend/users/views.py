@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from rest_framework.viewsets import ModelViewSet
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.views import APIView
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -33,6 +34,8 @@ class UsersViewSet(ModelViewSet):
     serializer_class = UsersSerializer
     # http_method_names = ["GET", "POST", "DEL"]
     permission_classes = (AllowAny,)
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['username', 'email']
 
     def get_serislizer_class(self):
         """будет использоваться сериализатор `RecipeGetSerializer`

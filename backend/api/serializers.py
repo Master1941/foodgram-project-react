@@ -23,16 +23,23 @@ from rest_framework.serializers import (
     ModelSerializer,
     ImageField,
     StringRelatedField,
+    ReadOnlyField,
     SlugRelatedField,  # получить строковые представления связанных объектов и передать их в указанное поле вместо id.
     ValidationError,
     CurrentUserDefault,
     SerializerMethodField,  # для создания дополнительных полей
-    ValidationError,
     Field,
 )
 from rest_framework.validators import UniqueTogetherValidator
 
-from food.models import Tag, Recipe, Ingredient, Favourites, RecipeIngredient
+from food.models import (
+    Tag,
+    Recipe,
+    Ingredient,
+    Favourites,
+    ShoppingList,
+    RecipeIngredient,
+)
 from users.serializers import UsersSerializer
 
 User = get_user_model()
@@ -43,8 +50,8 @@ class Base64ImageField(ImageField):
 
     def to_internal_value(self, data):
         if isinstance(data, str) and data.startswith("data:image"):
-            format, imgstr = data.split(";base64,")
-            ext = format.split("/")[-1]
+            forma1t, imgstr = data.split(";base64,")
+            ext = forma1t.split("/")[-1]
 
             data = ContentFile(base64.b64decode(imgstr), name="temp." + ext)
 
@@ -61,7 +68,7 @@ class TagSerializer(ModelSerializer):
 
 
 class FavoriteSerializer(ModelSerializer):
-    """ """
+    """суриализатор модели избранных рецептов."""
 
     class Meta:
         model = Favourites
@@ -105,13 +112,26 @@ class IngredientSerializer(ModelSerializer):
         fields = ("id", "name", "measurement_unit")
 
 
+class RecipeIngredientSerializer(ModelSerializer):
+    """сериализатор для сериализатора Pecipe."""
+
+    id = ReadOnlyField(source="ingredient.id")
+    name = ReadOnlyField(source="ingredient.name")
+    measurement_unit = ReadOnlyField(source="ingredient.measurement_unit")
+    amount = ReadOnlyField()
+
+    class Meta:
+        model = RecipeIngredient
+        fields = ("id", "name", "measurement_unit", "amount")
+
+
 class RecipeSerializer(ModelSerializer):
     """Cериализатор модели"""
 
     image = Base64ImageField(required=False, allow_null=True)
     tags = StringRelatedField(many=True, read_only=True)
-    author = UsersSerializer()
-    ingredients = IngredientSerializer()
+    author = UsersSerializer(read_only=True)
+    ingredients = RecipeIngredientSerializer()
     is_favorited = SerializerMethodField()
     is_in_shopping_cart = SerializerMethodField()
 
@@ -144,23 +164,40 @@ class RecipeSerializer(ModelSerializer):
             "cooking_time",
         )
 
-    def is_favorited(self):
-        """ """
+    def get_is_favorited(self, obj):
+        """рецепт в избраном или False"""
+        request = self.context.get('request')
+        if request is None or request.user.is_anonymous:
+            return False
+        return Favourites.objects.filter(
+            user=request.user, recipe=obj
+        ).exists()
+        # return Favourites.objects.filter(
+        #     user=self.context["request"].user, recipe=obj
+        # ).exists()
 
-    def is_in_shopping_cart(self):
-        """ """
+    def get_is_in_shopping_cart(self, obj):
+        """рецепт в покупках или False"""
+        request = self.context.get('request')
+        if request is None or request.user.is_anonymous:
+            return False
+        return ShoppingList.objects.filter(
+            user=request.user, recipe=obj
+        ).exists()
+        # request = self.context.get("request")
+        # return ShoppingList.objects.filter(user=request.user, recipe=obj).exists()
 
-    def create(self, validated_data):
-        """Спринт 10/17 → Тема 1/3: Django Rest Framework → Урок 9/15"""
-        if "tag" not in self.initial_data:
-            post = Recipe.objects.create(**validated_data)
-            return post
-        tags_data = validated_data.pop("tag")
-        post = Recipe.objects.create(**validated_data)
-        for tag_data in tags_data:
-            tag, _ = Tag.objects.get_or_create(**tag_data)
-            TagRecipe.objects.create(tag=tag, post=post)
-        return post
+    # def create(self, validated_data):
+    #     """Спринт 10/17 → Тема 1/3: Django Rest Framework → Урок 9/15"""
+    #     if "tag" not in self.initial_data:
+    #         post = Recipe.objects.create(**validated_data)
+    #         return post
+    #     tags_data = validated_data.pop("tag")
+    #     post = Recipe.objects.create(**validated_data)
+    #     for tag_data in tags_data:
+    #         tag, _ = Tag.objects.get_or_create(**tag_data)
+    #         TagRecipe.objects.create(tag=tag, post=post)
+    #     return post
 
     # def update(self, instance, validated_data):
     #     """Для сохранения ингредиентов и тегов рецепта потребуется

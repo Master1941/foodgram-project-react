@@ -34,12 +34,14 @@ class UsersSerializer(ModelSerializer):
             "is_subscribed",  # есть в гет запросе
         )
 
-    def get_is_subscraibed(self, obj) -> bool:
+    def get_is_subscribed(self, obj) -> bool:
         """Возврвщает False если не подписан на этого пользователя."""
-        user = self.context.get("request").user
-        if not user.is_anonymous:
-            return Subscription.objects.filter(user=user, author=obj).exists()
-        return False
+        request = self.context.get('request')
+        if request is None or request.user.is_anonymous:
+            return False
+        return Subscription.objects.filter(
+            user=request.user, author=obj
+        ).exists()
 
     # def create(self, validated_data):
     #     return User.objects.create_user(**validated_data)
@@ -85,9 +87,9 @@ class SubscriptionSerializer(ModelSerializer):
             "username",
             "first_name",
             "last_name",
-            "is_subscribed",  # есть в гет запросе
-            "recipes",
-            "recipes_count",
+            "is_subscribed",  # Подписан ли текущий пользователь на этого
+            "recipes",  # Array of objects (RecipeMinified)
+            "recipes_count",  # Общее количество рецептов пользователя
         )
         validators = [
             UniqueTogetherValidator(
@@ -115,7 +117,7 @@ class SubscriptionSerializer(ModelSerializer):
         """ """
 
     def get_recipes_count(self):
-        """ """
+        """Общее количество рецептов пользователя"""
 
 
 class TokenSerializer(ModelSerializer):

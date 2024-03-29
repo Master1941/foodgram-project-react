@@ -11,7 +11,7 @@
 """
 
 from rest_framework.viewsets import ModelViewSet
-
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from api.serializers import (
@@ -25,8 +25,8 @@ from food.models import (
     Tag,
     Recipe,
     Ingredient,
-    # Favourites,
-    # ShoppingList,
+    Favourites,
+    ShoppingList,
     # Subscription,
     # RecipeIngredient,
 )
@@ -57,6 +57,8 @@ class RecipeViewSet(ModelViewSet):
 
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['author']
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
