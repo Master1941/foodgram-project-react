@@ -10,23 +10,42 @@
 могут быть похожи друг на друга. Избегайте дублирующегося кода.
 """
 
+from rest_framework.response import Response
+from rest_framework import status
 from rest_framework.viewsets import ModelViewSet
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
+from django.shortcuts import get_object_or_404
 from api.serializers import (
     TagSerializer,
-    RecipeSerializer,
+    RecipeFavoriteSerializer,
     IngredientSerializer,
     RecipeGetSerializer,
     RecipeCreatSerializer,
 )
+from django.contrib.auth import get_user_model
+from rest_framework.viewsets import ModelViewSet
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.views import APIView
+from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.response import Response
+from rest_framework import status
+from users.serializers import (
+    UsersSerializer,
+    UserCreateSerializer,
+    SubscriptionSerializer,
+)
+from food.models import Subscription
+from users.serializers import RecipeMinifiedSerializer
+from api.pagination import PageNumberPagination
 from food.models import (
     Tag,
     Recipe,
     Ingredient,
     Favourites,
-    ShoppingList,
+    # ShoppingList,
     # Subscription,
     # RecipeIngredient,
 )
@@ -38,6 +57,7 @@ class IngredientViewSet(ModelViewSet):
 
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
+    http_method_names = ("get",)
 
 
 class TagViewSet(ModelViewSet):
@@ -46,28 +66,22 @@ class TagViewSet(ModelViewSet):
 
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+    http_method_names = ("get",)
 
 
 class RecipeViewSet(ModelViewSet):
-    """GET  Список рецептов
-    POST    Создание рецепта
-    GET     Получение рецепта
-    PATCH   Обновление рецепта
-    DEL     Удаление рецепта"""
-
+    """Страница доступна всем пользователям.
+    Доступна фильтрация по избранному, автору, списку покупок и тегам."""
+    serializer_class = RecipeGetSerializer
     queryset = Recipe.objects.all()
-    serializer_class = RecipeSerializer
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['author']
+    filter_backends = (DjangoFilterBackend,)
+    filterset_fields = ("author",)
+    pagination_class = PageNumberPagination
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
-    @action(
-        methods=["GET"],
-        detail=False,
-        permission_classes=[IsAuthenticated],
-    )
+    @action(methods=["GET"], detail=False, permission_classes=[IsAuthenticated])
     def download_shopping_cart(self, request):
         """Скачать файл со списком покупок. Это может быть TXT/PDF/CSV.
         Важно, чтобы контент файла удовлетворял требованиям задания.
@@ -83,17 +97,13 @@ class RecipeViewSet(ModelViewSet):
         # serializer = UsersSerializer(user)
         # return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @action(
-        methods=["GET", "DEL"],
-        detail=True,
-        permission_classes=[IsAuthenticated],
-    )
+    @action(methods=["POST", "DEL"], detail=True, permission_classes=[IsAuthenticated])
     def shopping_cart(self, request):
         """POST  Добавить рецепт в список покупок
         DEL     Удалить рецепт из списка покупок"""
 
     @action(
-        methods=["GET", "DEL"],
+        methods=["POST", "DEL",],
         detail=True,
         permission_classes=[IsAuthenticated],
     )
@@ -101,12 +111,53 @@ class RecipeViewSet(ModelViewSet):
         """POST  Добавить рецепт в избранное
         DEL  Удалить рецепт из избранного"""
 
-    def get_serislizer_class(self):
-        """будет использоваться сериализатор `RecipeGetSerializer`
-        а для остальных методов будет использоваться `RecipeCreateSerializer`"""
+        recipe = get_object_or_404(Recipe, id=kwargs["pk"])
+        user = self.request.user
+        if not user.is_anonymous:
+            if self.action == "create":
+                # Добавление рецепта в избранное
+                if not Favourites.objects.filter(
+                    user=user,
+                    recipe=recipe,
+                ).exists():
+                    Favourites.objects.create(
+                        user=user,
+                        recipe=recipe,
+                    )
+                    serializer = RecipeFavoriteSerializer(recipe)
+                    return Response(
+                        data=serializer.data,
+                        status=status.HTTP_201_CREATED,
+                    )
+                else:
+                    return Response(
+                        {"Рецепт уже в избранном"},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+            elif self.action == "destroy":
+                # Удаление рецепта из избранного
+                if Favourites.objects.filter(
+                    user=request.user,
+                    recipe=recipe,
+                ).exists():
+                    Favourites.objects.filter(
+                        user=request.user,
+                        recipe=recipe,
+                    ).delete()
+                    return Response({"Рецепт успешно удален из избранного"})
+                else:
+                    return Response({"Рецепт не найден в избранном"})
+        else:
+            return Response(
+                {"Учетные данные не были предоставлены."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
 
-        # Если действие (action) — получение списка объектов ('list')
-        if self.action == "list":
-            # ...то применяем CatListSerializer
+    def get_serislizer_class(self):
+        """Будет использоваться сериализатор `RecipeGetSerializer`
+        а для остальных методов
+        будет использоваться `RecipeCreateSerializer`"""
+
+        if self.action in ("list", "retrieve"):
             return RecipeGetSerializer
         return RecipeCreatSerializer

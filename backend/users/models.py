@@ -1,6 +1,6 @@
 """Обязательные поля для пользователя:
 
-логин,
+логин, (string <= 150 characters ^[\w.@+-]+\z)
 пароль,
 email,
 имя,
@@ -34,7 +34,7 @@ class CustomUser(AbstractUser):
         help_text="Укажите логин",
         unique=True,
         max_length=USERNAME_MAX_LENGTH,
-        validators=[RegexValidator(regex=r"^[\w.@+-]+$"), validate_username],
+        validators=[RegexValidator(regex=r"^[\w.@+-]+\z"), validate_username],
     )
     email = models.EmailField(
         "E-mail",

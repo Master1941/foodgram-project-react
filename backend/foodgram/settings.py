@@ -114,8 +114,6 @@ STATIC_ROOT = BASE_DIR / "collected_static"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
-STATICFILES_DIRS = ((BASE_DIR / "static/"),)
-
 AUTH_USER_MODEL = "users.CustomUser"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
@@ -126,8 +124,11 @@ DJOSER = {
 }
 
 REST_FRAMEWORK = {
+    # "DEFAULT_RENDERER_CLASSES": [
+    #     # МОЖНО ОТКЛЮЧИТЬ АПИ БРАУЗЕРА (НУЖНО В РЕЛИЗЕ)
+    # ],
     "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.IsAuthenticatedOrReadOnly",
+        "rest_framework.permissions.AllowAny",
     ],
     # AllowAny — всё разрешено, любой пользователь (и даже аноним) может выполнить любой запрос.
     # IsAuthenticated — только аутентифицированные пользователи имеют доступ к API и могут выполнить любой запрос. Остальным вернётся ответ "401 Unauthorized".

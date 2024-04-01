@@ -46,7 +46,7 @@ class UsersViewSet(ModelViewSet):
             # ...то применяем CatListSerializer
             return UsersSerializer
         return UserCreateSerializer
-    
+
     @action(
         methods=["GET"],
         detail=False,

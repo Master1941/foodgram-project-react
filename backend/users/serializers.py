@@ -1,21 +1,30 @@
-from rest_framework import serializers
+# from rest_framework import serializers
 from rest_framework.serializers import (
     SerializerMethodField,
     ModelSerializer,
-    CharField,
+    # CharField,
     ValidationError,
 )
 from rest_framework.validators import UniqueTogetherValidator
 from django.contrib.auth import get_user_model
 
-# from food.constants import (
-#     EMAIL_MAX_LENGTH,
-#     USERNAME_MAX_LENGTH,
-# )
-
-from food.models import Subscription
+from food.models import Subscription, Recipe
+from api.serializers import RecipeFavoriteSerializer
 
 User = get_user_model()
+
+
+class RecipeMinifiedSerializer(ModelSerializer):
+    """Серилизатор рецептов для страници подписок."""
+
+    class Meta:
+        model = Recipe
+        fields = (
+            "id",
+            "name",
+            "image",
+            "cooking_time",
+        )
 
 
 class UsersSerializer(ModelSerializer):
@@ -36,15 +45,13 @@ class UsersSerializer(ModelSerializer):
 
     def get_is_subscribed(self, obj) -> bool:
         """Возврвщает False если не подписан на этого пользователя."""
-        request = self.context.get('request')
+        request = self.context.get("request")
         if request is None or request.user.is_anonymous:
             return False
         return Subscription.objects.filter(
-            user=request.user, author=obj
+            user=request.user,
+            author=obj,
         ).exists()
-
-    # def create(self, validated_data):
-    #     return User.objects.create_user(**validated_data)
 
 
 class UserCreateSerializer(ModelSerializer):
@@ -60,23 +67,21 @@ class UserCreateSerializer(ModelSerializer):
             "password",
         )
 
-    # def validate_username(self, value):
-    #     if value == "me":
-    #         raise serializers.ValidationError(
-    #             'Имя пользователя "me" запрещено.',
-    #         )
-    #     return value
-
     def create(self, validated_data):
         """Создание нового пользователя"""
         return User.objects.create_user(**validated_data)
 
 
 class SubscriptionSerializer(ModelSerializer):
-    """Серилизатор выводит подписок текущего пользователя."""
+    """Серилизатор пользователей, на которых подписан текущий пользователь.
+    В выдачу добавляются рецепты.."""
 
     is_subscribed = SerializerMethodField()
-    recipes = SerializerMethodField()
+    recipes = RecipeFavoriteSerializer(
+        many=True,
+        read_only=True,
+        source="recipe_ingredient",
+    )
     recipes_count = SerializerMethodField()
 
     class Meta:
@@ -89,6 +94,10 @@ class SubscriptionSerializer(ModelSerializer):
             "last_name",
             "is_subscribed",  # Подписан ли текущий пользователь на этого
             "recipes",  # Array of objects (RecipeMinified)
+            # "id": 0,
+            # "name": "string",
+            # "image": "http://foodgram.example.org/media/recipes/images/image.jpeg",
+            # "cooking_time": 1
             "recipes_count",  # Общее количество рецептов пользователя
         )
         validators = [
@@ -118,14 +127,3 @@ class SubscriptionSerializer(ModelSerializer):
 
     def get_recipes_count(self):
         """Общее количество рецептов пользователя"""
-
-
-class TokenSerializer(ModelSerializer):
-    """Серилизатор"""
-
-    username = CharField(required=True)
-    confirmation_code = CharField(required=True)
-
-    class Meta:
-        model = User
-        fields = ("username", "confirmation_code")

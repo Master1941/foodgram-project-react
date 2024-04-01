@@ -80,30 +80,6 @@ class FavoriteSerializer(ModelSerializer):
         )
 
 
-class RecipeGetSerializer(ModelSerializer):
-    """Cериализатор модели"""
-
-
-class RecipeCreatSerializer(ModelSerializer):
-    """Для сохранения ингредиентов и тегов рецепта потребуется
-    переопределить методы create и update в ModelSerializer."""
-
-    class Meta:
-        model = Recipe
-        fields = (
-            "ingredients",
-            # id": 1123,
-            # "amount": 10
-            "tags",
-            # 1,
-            # 2
-            "image",
-            "name",
-            "text",
-            "cooking_time",
-        )
-
-
 class IngredientSerializer(ModelSerializer):
     """Cериализатор модели"""
 
@@ -115,9 +91,11 @@ class IngredientSerializer(ModelSerializer):
 class RecipeIngredientSerializer(ModelSerializer):
     """сериализатор для сериализатора Pecipe."""
 
-    id = ReadOnlyField(source="ingredient.id")
-    name = ReadOnlyField(source="ingredient.name")
-    measurement_unit = ReadOnlyField(source="ingredient.measurement_unit")
+    id = ReadOnlyField(source="ingredient.id", read_only=True)
+    name = ReadOnlyField(source="ingredient.name", read_only=True)
+    measurement_unit = ReadOnlyField(
+        source="ingredient.measurement_unit", read_only=True
+    )
     amount = ReadOnlyField()
 
     class Meta:
@@ -125,15 +103,20 @@ class RecipeIngredientSerializer(ModelSerializer):
         fields = ("id", "name", "measurement_unit", "amount")
 
 
-class RecipeSerializer(ModelSerializer):
-    """Cериализатор модели"""
+class RecipeGetSerializer(ModelSerializer):
+    """Cериализатор для просмотра рецептов."""
 
-    image = Base64ImageField(required=False, allow_null=True)
+    image = Base64ImageField()  # required=False, allow_null=True)
     tags = StringRelatedField(many=True, read_only=True)
-    author = UsersSerializer(read_only=True)
-    ingredients = RecipeIngredientSerializer()
+
+    ingredients = RecipeIngredientSerializer(
+        many=True,
+        read_only=True,
+        source="recipe_ingredient",
+    )
     is_favorited = SerializerMethodField()
     is_in_shopping_cart = SerializerMethodField()
+    author = UsersSerializer(read_only=True)
 
     class Meta:
         model = Recipe
@@ -166,26 +149,58 @@ class RecipeSerializer(ModelSerializer):
 
     def get_is_favorited(self, obj):
         """рецепт в избраном или False"""
-        request = self.context.get('request')
+        request = self.context.get("request")
         if request is None or request.user.is_anonymous:
             return False
         return Favourites.objects.filter(
-            user=request.user, recipe=obj
+            user=request.user,
+            recipe=obj,
         ).exists()
-        # return Favourites.objects.filter(
-        #     user=self.context["request"].user, recipe=obj
-        # ).exists()
 
     def get_is_in_shopping_cart(self, obj):
         """рецепт в покупках или False"""
-        request = self.context.get('request')
+        request = self.context.get("request")
         if request is None or request.user.is_anonymous:
             return False
         return ShoppingList.objects.filter(
-            user=request.user, recipe=obj
+            user=request.user,
+            recipe=obj,
         ).exists()
-        # request = self.context.get("request")
-        # return ShoppingList.objects.filter(user=request.user, recipe=obj).exists()
+
+
+class IngredientCreatRecipeSerializize(ModelSerializer):
+    """Сериализатор RecipeIngredient для создания рецепта"""
+
+    class Meta:
+        model = RecipeIngredient
+        fields = (
+            "id",
+            "amount",
+        )
+
+
+class RecipeCreatSerializer(ModelSerializer):
+    """POST DELET PUT лли PATCH
+    Для сохранения ингредиентов и тегов рецепта потребуется
+    переопределить методы create и update в ModelSerializer."""
+
+    ingredients = IngredientCreatRecipeSerializize()
+    tags = 
+    image = Base64ImageField()
+    class Meta:
+        model = Recipe
+        fields = (
+            "ingredients",
+            # id": 1123,
+            # "amount": 10
+            "tags",
+            # 1,
+            # 2
+            "image",
+            "name",
+            "text",
+            "cooking_time",
+        )
 
     # def create(self, validated_data):
     #     """Спринт 10/17 → Тема 1/3: Django Rest Framework → Урок 9/15"""
@@ -219,3 +234,16 @@ class RecipeSerializer(ModelSerializer):
 
     #     instance.save()
     #     return instance
+
+
+class RecipeFavoriteSerializer(ModelSerializer):
+    """Cериализатор модели рецепта для избранного."""
+
+    class Meta:
+        model = Recipe
+        fields = (
+            "id",
+            "name",
+            "image",  # Ссылка на картинку на сайте
+            "cooking_time",
+        )
