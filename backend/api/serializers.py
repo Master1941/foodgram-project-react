@@ -26,7 +26,7 @@ from rest_framework.serializers import (
     ReadOnlyField,
     SerializerMethodField,
     ModelSerializer,
-    # CharField,
+    CharField,
     ValidationError,
     SlugRelatedField,  # получить строковые представления связанных объектов и передать их в указанное поле вместо id.
     ValidationError,
@@ -42,8 +42,8 @@ from food.models import (
     Favourites,
     ShoppingList,
     RecipeIngredient,
+    Subscription,
 )
-from api.serializers import UsersSerializer, RecipeFavoriteSerializer
 
 User = get_user_model()
 
@@ -65,7 +65,8 @@ class UsersSerializer(ModelSerializer):
     """Серилизатор"""
 
     is_subscribed = SerializerMethodField()
-
+    username = CharField(source='username')
+    
     class Meta:
         model = User
         fields = (
@@ -111,7 +112,7 @@ class SubscriptionSerializer(ModelSerializer):
     В выдачу добавляются рецепты.."""
 
     is_subscribed = SerializerMethodField()
-    recipes = RecipeFavoriteSerializer(
+    recipes = RecipeMinifiedSerializer(
         many=True,
         read_only=True,
         source="recipe_ingredient",
@@ -221,7 +222,10 @@ class RecipeGetSerializer(ModelSerializer):
     )
     is_favorited = SerializerMethodField()
     is_in_shopping_cart = SerializerMethodField()
-    author = UsersSerializer(read_only=True)
+    author = UsersSerializer(
+        read_only=True,
+        source='author.username',
+    )
 
     class Meta:
         model = Recipe
@@ -290,8 +294,8 @@ class RecipeCreatSerializer(ModelSerializer):
     переопределить методы create и update в ModelSerializer."""
 
     ingredients = IngredientCreatRecipeSerializize()
-    tags = 
     image = Base64ImageField()
+
     class Meta:
         model = Recipe
         fields = (
@@ -339,4 +343,3 @@ class RecipeCreatSerializer(ModelSerializer):
 
     #     instance.save()
     #     return instance
-

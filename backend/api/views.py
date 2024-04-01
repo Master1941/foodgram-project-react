@@ -22,14 +22,13 @@ from rest_framework.views import APIView
 
 from api.serializers import (
     TagSerializer,
-    RecipeFavoriteSerializer,
     IngredientSerializer,
     RecipeGetSerializer,
     RecipeCreatSerializer,
     UsersSerializer,
     UserCreateSerializer,
     SubscriptionSerializer,
-    # RecipeMinifiedSerializer,
+    RecipeMinifiedSerializer,
 )
 
 from api.pagination import PageNumberPagination
@@ -71,9 +70,7 @@ class UsersViewSet(ModelViewSet):
         """будет использоваться сериализатор `RecipeGetSerializer`
         а для остальных методов будет использоваться `RecipeCreateSerializer`"""
 
-        # Если действие (action) — получение списка объектов ('list')
         if self.action in ("retrieve", "list"):
-            # ...то применяем CatListSerializer
             return UsersSerializer
         return UserCreateSerializer
 
@@ -119,10 +116,50 @@ class UsersViewSet(ModelViewSet):
         detail=True,
         permission_classes=[IsAuthenticated],
     )
-    def subscribe(self, request):
+    def subscribe(self, request, **kwargs):
         """POST Подписаться на пользователя
         DEL  Отписаться от пользователя."""
-
+        recipe = get_object_or_404(Recipe, id=kwargs["pk"])
+        user = self.request.user
+        if not user.is_anonymous:
+            if self.action == "create":
+                # Добавление рецепта в избранное
+                if not Favourites.objects.filter(
+                    user=user,
+                    recipe=recipe,
+                ).exists():
+                    Favourites.objects.create(
+                        user=user,
+                        recipe=recipe,
+                    )
+                    serializer = RecipeMinifiedSerializer(recipe)
+                    return Response(
+                        data=serializer.data,
+                        status=status.HTTP_201_CREATED,
+                    )
+                else:
+                    return Response(
+                        {"Рецепт уже в избранном"},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+            elif self.action == "destroy":
+                # Удаление рецепта из избранного
+                if Favourites.objects.filter(
+                    user=request.user,
+                    recipe=recipe,
+                ).exists():
+                    Favourites.objects.filter(
+                        user=request.user,
+                        recipe=recipe,
+                    ).delete()
+                    return Response({"Рецепт успешно удален из избранного"})
+                else:
+                    return Response({"Рецепт не найден в избранном"})
+        else:
+            return Response(
+                {"Учетные данные не были предоставлены."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
 
 class IngredientViewSet(ModelViewSet):
     """GET Список ингредиентов
@@ -201,7 +238,7 @@ class RecipeViewSet(ModelViewSet):
                         user=user,
                         recipe=recipe,
                     )
-                    serializer = RecipeFavoriteSerializer(recipe)
+                    serializer = RecipeMinifiedSerializer(recipe)
                     return Response(
                         data=serializer.data,
                         status=status.HTTP_201_CREATED,

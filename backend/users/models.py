@@ -24,7 +24,6 @@ from food.constants import (
     LAST_NAME_MAX_LENGTH,
     PASSWORD_MAX_LENGTH,
 )
-from users.validators import validate_username
 
 
 class CustomUser(AbstractUser):
@@ -34,7 +33,7 @@ class CustomUser(AbstractUser):
         help_text="Укажите логин",
         unique=True,
         max_length=USERNAME_MAX_LENGTH,
-        validators=[RegexValidator(regex=r"^[\w.@+-]+\z"), validate_username],
+        validators=[RegexValidator(regex=r"^[\w.@+-]+\z"),],
     )
     email = models.EmailField(
         "E-mail",
