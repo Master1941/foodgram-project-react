@@ -16,9 +16,11 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
-from rest_framework.permissions import IsAuthenticated, IsAuthenticated, AllowAny
+from rest_framework.permissions import (
+    IsAuthenticated,
+    AllowAny,
+)
 from rest_framework.decorators import action
-from rest_framework.views import APIView
 
 from api.serializers import (
     TagSerializer,
@@ -31,7 +33,7 @@ from api.serializers import (
     RecipeMinifiedSerializer,
 )
 
-from api.pagination import PageNumberPagination
+from api.pagination import CustomPageNumberPagination
 from food.models import (
     Tag,
     Recipe,
@@ -66,9 +68,10 @@ class UsersViewSet(ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["username", "email"]
 
-    def get_serislizer_class(self):
+    def get_serializer_class(self):
         """будет использоваться сериализатор `RecipeGetSerializer`
-        а для остальных методов будет использоваться `RecipeCreateSerializer`"""
+        а для остальных методов будет использоваться `RecipeCreateSerializer`
+        """
 
         if self.action in ("retrieve", "list"):
             return UsersSerializer
@@ -161,6 +164,7 @@ class UsersViewSet(ModelViewSet):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
+
 class IngredientViewSet(ModelViewSet):
     """GET Список ингредиентов
     GET Получение ингредиента"""
@@ -183,11 +187,22 @@ class RecipeViewSet(ModelViewSet):
     """Страница доступна всем пользователям.
     Доступна фильтрация по избранному, автору, списку покупок и тегам."""
 
-    serializer_class = RecipeGetSerializer
     queryset = Recipe.objects.all()
     filter_backends = (DjangoFilterBackend,)
-    filterset_fields = ("author",)
-    pagination_class = PageNumberPagination
+    filterset_fields = (
+        "author",
+        "name",
+    )
+    pagination_class = CustomPageNumberPagination
+
+    def get_serializer_class(self):
+        """Будет использоваться сериализатор `RecipeGetSerializer`
+        а для остальных методов
+        будет использоваться `RecipeCreateSerializer`"""
+
+        if self.action in ("list", "retrieve"):
+            return RecipeGetSerializer
+        return RecipeCreatSerializer
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
@@ -215,8 +230,8 @@ class RecipeViewSet(ModelViewSet):
 
     @action(
         methods=[
-            "POST",
-            "DEL",
+            "post",
+            "DELETE",
         ],
         detail=True,
         permission_classes=[IsAuthenticated],
@@ -226,9 +241,9 @@ class RecipeViewSet(ModelViewSet):
         DEL  Удалить рецепт из избранного"""
 
         recipe = get_object_or_404(Recipe, id=kwargs["pk"])
-        user = self.request.user
+        user = request.user
         if not user.is_anonymous:
-            if self.action == "create":
+            if request.method == 'POST':
                 # Добавление рецепта в избранное
                 if not Favourites.objects.filter(
                     user=user,
@@ -248,30 +263,57 @@ class RecipeViewSet(ModelViewSet):
                         {"Рецепт уже в избранном"},
                         status=status.HTTP_400_BAD_REQUEST,
                     )
-            elif self.action == "destroy":
+            if request.method == 'DELETE':
                 # Удаление рецепта из избранного
                 if Favourites.objects.filter(
-                    user=request.user,
+                    user=user,
                     recipe=recipe,
                 ).exists():
                     Favourites.objects.filter(
-                        user=request.user,
+                        user=user,
                         recipe=recipe,
                     ).delete()
-                    return Response({"Рецепт успешно удален из избранного"})
+                    return Response(
+                        {"Рецепт успешно удален из избранного"},
+                        status=status.HTTP_200_OK,
+                    )
                 else:
                     return Response({"Рецепт не найден в избранном"})
+            else:
+                return Response(
+                    {"detail": "Метод не разрешен"},
+                    status=status.HTTP_405_METHOD_NOT_ALLOWED,
+                )
         else:
             return Response(
                 {"Учетные данные не были предоставлены."},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
-    def get_serislizer_class(self):
-        """Будет использоваться сериализатор `RecipeGetSerializer`
-        а для остальных методов
-        будет использоваться `RecipeCreateSerializer`"""
+    @action(
+        methods=["GET"],
+        detail=False,
+        permission_classes=[IsAuthenticated],
+        pagination_class=CustomPageNumberPagination,
+    )
+    def subscriptions(self, request):
+        """Возвращает пользователей,
+        на которых подписан текущий пользователь.
+        В выдачу добавляются рецепты.."""
+        user = request.user
+        subscription = Subscription.objects.filter(user=user)
+        serializer = SubscriptionSerializer(
+            subscription,
+            manyu=True,
+        )
 
-        if self.action in ("list", "retrieve"):
-            return RecipeGetSerializer
-        return RecipeCreatSerializer
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(
+        methods=["POST", "DEL"],
+        detail=True,
+        permission_classes=[IsAuthenticated],
+    )
+    def subscribe(self, request):
+        """POST Подписаться на пользователя
+        DEL  Отписаться от пользователя."""

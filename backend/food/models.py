@@ -114,13 +114,11 @@ class Recipe(models.Model):
     text = models.TextField("Описание")
     ingredients = models.ManyToManyField(
         Ingredient,
-        related_name="recipe",
         verbose_name="Список ингредиентов",
         through="RecipeIngredient",
     )
     tags = models.ManyToManyField(
         Tag,
-        related_name="recipe",
         verbose_name="Список id тегов",
     )
     cooking_time = models.IntegerField(

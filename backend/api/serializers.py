@@ -24,15 +24,14 @@ from rest_framework.serializers import (
     ImageField,
     StringRelatedField,
     ReadOnlyField,
-    SerializerMethodField,
-    ModelSerializer,
-    CharField,
+    # CharField,
+    # SlugRelatedField,
+    # получить строковые представления связанных объектов
+    # и передать их в указанное поле вместо id.
     ValidationError,
-    SlugRelatedField,  # получить строковые представления связанных объектов и передать их в указанное поле вместо id.
-    ValidationError,
-    CurrentUserDefault,
+    # CurrentUserDefault,
     SerializerMethodField,  # для создания дополнительных полей
-    Field,
+    # Field,
 )
 from rest_framework.validators import UniqueTogetherValidator
 from food.models import (
@@ -65,8 +64,7 @@ class UsersSerializer(ModelSerializer):
     """Серилизатор"""
 
     is_subscribed = SerializerMethodField()
-    username = CharField(source='username')
-    
+
     class Meta:
         model = User
         fields = (
@@ -85,7 +83,7 @@ class UsersSerializer(ModelSerializer):
             return False
         return Subscription.objects.filter(
             user=request.user,
-            author=obj,
+            subscribed=obj,
         ).exists()
 
 
@@ -213,7 +211,10 @@ class RecipeGetSerializer(ModelSerializer):
     """Cериализатор для просмотра рецептов."""
 
     image = Base64ImageField()  # required=False, allow_null=True)
-    tags = StringRelatedField(many=True, read_only=True)
+    tags = TagSerializer(
+        many=True,
+        read_only=True,
+    )
 
     ingredients = RecipeIngredientSerializer(
         many=True,
@@ -224,7 +225,6 @@ class RecipeGetSerializer(ModelSerializer):
     is_in_shopping_cart = SerializerMethodField()
     author = UsersSerializer(
         read_only=True,
-        source='author.username',
     )
 
     class Meta:
