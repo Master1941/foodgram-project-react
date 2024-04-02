@@ -29,7 +29,7 @@ from api.serializers import (
     RecipeCreatSerializer,
     UsersSerializer,
     UserCreateSerializer,
-    SubscriptionSerializer,
+    SubscriptionsSerializer,
     RecipeMinifiedSerializer,
 )
 
@@ -39,7 +39,7 @@ from food.models import (
     Recipe,
     Ingredient,
     Favourites,
-    # ShoppingList,
+    ShoppingList,
     Subscription,
     # RecipeIngredient,
 )
@@ -106,16 +106,17 @@ class UsersViewSet(ModelViewSet):
         на которых подписан текущий пользователь.
         В выдачу добавляются рецепты.."""
         user = request.user
-        subscription = Subscription.objects.filter(user=user)
-        serializer = SubscriptionSerializer(
+        subscription = User.objects.filter(following__user=user)
+        serializer = SubscriptionsSerializer(
             subscription,
-            manyu=True,
+            many=True,
+            context={'request': request},
         )
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(
-        methods=["POST", "DEL"],
+        methods=["POST", "DELETE"],
         detail=True,
         permission_classes=[IsAuthenticated],
     )
@@ -223,14 +224,66 @@ class RecipeViewSet(ModelViewSet):
         # serializer = UsersSerializer(user)
         # return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @action(methods=["POST", "DEL"], detail=True, permission_classes=[IsAuthenticated])
-    def shopping_cart(self, request):
+    @action(
+        methods=["POST", "DELETE"], detail=True, permission_classes=[IsAuthenticated]
+    )
+    def shopping_cart(self, request, **kwargs):
         """POST  Добавить рецепт в список покупок
         DEL     Удалить рецепт из списка покупок"""
 
+        recipe = get_object_or_404(Recipe, id=kwargs["pk"])
+        user = request.user
+        if not user.is_anonymous:
+            if request.method == "POST":
+                # Добавление рецепта в покупки
+                if not ShoppingList.objects.filter(
+                    user=user,
+                    recipe=recipe,
+                ).exists():
+                    ShoppingList.objects.create(
+                        user=user,
+                        recipe=recipe,
+                    )
+                    serializer = RecipeMinifiedSerializer(recipe)
+                    return Response(
+                        data=serializer.data,
+                        status=status.HTTP_201_CREATED,
+                    )
+                else:
+                    return Response(
+                        {"Рецепт уже в корзине"},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+            if request.method == "DELETE":
+                # Удаление рецепта из избранного
+                if ShoppingList.objects.filter(
+                    user=user,
+                    recipe=recipe,
+                ).exists():
+                    ShoppingList.objects.filter(
+                        user=user,
+                        recipe=recipe,
+                    ).delete()
+                    return Response(
+                        {"Рецепт успешно удален из избранного"},
+                        status=status.HTTP_200_OK,
+                    )
+                else:
+                    return Response({"Рецепт не найден в избранном"})
+            else:
+                return Response(
+                    {"detail": "Метод не разрешен"},
+                    status=status.HTTP_405_METHOD_NOT_ALLOWED,
+                )
+        else:
+            return Response(
+                {"Учетные данные не были предоставлены."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
     @action(
         methods=[
-            "post",
+            "POST",
             "DELETE",
         ],
         detail=True,
@@ -243,7 +296,7 @@ class RecipeViewSet(ModelViewSet):
         recipe = get_object_or_404(Recipe, id=kwargs["pk"])
         user = request.user
         if not user.is_anonymous:
-            if request.method == 'POST':
+            if request.method == "POST":
                 # Добавление рецепта в избранное
                 if not Favourites.objects.filter(
                     user=user,
@@ -263,7 +316,7 @@ class RecipeViewSet(ModelViewSet):
                         {"Рецепт уже в избранном"},
                         status=status.HTTP_400_BAD_REQUEST,
                     )
-            if request.method == 'DELETE':
+            if request.method == "DELETE":
                 # Удаление рецепта из избранного
                 if Favourites.objects.filter(
                     user=user,
@@ -301,19 +354,22 @@ class RecipeViewSet(ModelViewSet):
         на которых подписан текущий пользователь.
         В выдачу добавляются рецепты.."""
         user = request.user
+        queryset = User.objects.filter(following__user=user)
         subscription = Subscription.objects.filter(user=user)
-        serializer = SubscriptionSerializer(
-            subscription,
-            manyu=True,
+        serializer = SubscriptionsSerializer(
+            queryset,
+            many=True,
+            context={'request': request},
         )
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(
-        methods=["POST", "DEL"],
+        methods=["POST", "DELETE"],
         detail=True,
         permission_classes=[IsAuthenticated],
     )
     def subscribe(self, request):
         """POST Подписаться на пользователя
         DEL  Отписаться от пользователя."""
+        # if request.method == "POST":

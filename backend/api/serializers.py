@@ -105,13 +105,13 @@ class UserCreateSerializer(ModelSerializer):
         return User.objects.create_user(**validated_data)
 
 
-class SubscriptionSerializer(ModelSerializer):
+class SubscriptionsSerializer(ModelSerializer):
     """Серилизатор пользователей, на которых подписан текущий пользователь.
     В выдачу добавляются рецепты.."""
 
     is_subscribed = SerializerMethodField()
     recipes = RecipeMinifiedSerializer(
-        many=True,
+        # many=True,
         read_only=True,
         source="recipe_ingredient",
     )
@@ -148,18 +148,19 @@ class SubscriptionSerializer(ModelSerializer):
             raise ValidationError("Нельзя подписаться на самого себя!")
         return value
 
-    def get_is_subscraiber(self, obj):
+    def get_is_subscribed(self, obj):
         """ """
         user = self.context.get("request").user
         if not user.is_anonymous:
             return Subscription.objects.filter(user=user, author=obj).exists()
         return False
 
-    def get_recipes(self):
-        """ """
+    # def get_recipes(self):
+    #     """ """
 
-    def get_recipes_count(self):
+    def get_recipes_count(self, obj):
         """Общее количество рецептов пользователя"""
+        return obj.recipes.count()
 
 
 class Base64ImageField(ImageField):
