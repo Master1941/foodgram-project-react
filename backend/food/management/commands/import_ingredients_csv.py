@@ -1,18 +1,20 @@
 from django.core.management.base import BaseCommand, CommandError
 from food.models import Ingredient
 import csv
+# import os
+# from foodgram import settings
 
 
 class Command(BaseCommand):
     help = 'Imports Ingredient data from a CSV file'
 
-    def add_arguments(self, parser):
-        parser.add_argument('file_path', type=str)
+    # def add_arguments(self, parser):
+    #     parser.add_argument('file_path', type=str)
 
     def handle(self, *args, **options):
         try:
-            with open(options['file_path'], 'r', encoding="utf-8") as f:
-                reader = csv.DictReader(f)
+            with open("../data/ingredients.csv", 'r', encoding="utf-8") as file:
+                reader = csv.DictReader(file)
                 for row in reader:
                     ingredient, created = Ingredient.objects.get_or_create(
                         name=row['name'],

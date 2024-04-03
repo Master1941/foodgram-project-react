@@ -216,13 +216,13 @@ class Subscription(models.Model):
     # похожее былдо в api_final_yatube
     user = models.ForeignKey(
         User,
-        related_name="follower",
+        related_name="user",
         verbose_name="Пользователь",
         on_delete=models.CASCADE,
     )
     subscribed = models.ForeignKey(
         User,
-        related_name="following",
+        related_name="subscribed",
         verbose_name="Блогеры",
         on_delete=models.CASCADE,
     )

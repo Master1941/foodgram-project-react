@@ -12,7 +12,7 @@ SECRET_KEY = os.getenv("SECRET_KEY", "key")
 DEBUG = os.getenv("DEBUG", "True") == "True"
 
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1 localhost").split()
-
+print(ALLOWED_HOSTS)
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -69,19 +69,15 @@ TEST_DATABASES = {
 PROD_DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("POSTGRES_DB", "kittygram"),
-        "USER": os.getenv("POSTGRES_USER", "kittygram_user"),
-        "PASSWORD": os.getenv("POSTGRES_PASSWORD", ""),
-        "HOST": os.getenv("DB_HOST", ""),
-        "PORT": os.getenv("DB_PORT", "5432"),
+        "NAME": os.getenv("POSTGRES_DB"),
+        "USER": os.getenv("POSTGRES_USER"),
+        "PASSWORD": os.getenv("POSTGRES_PASSWORD"),
+        "HOST": os.getenv("DB_HOST"),
+        "PORT": os.getenv("DB_PORT"),
     }
 }
-
-DATABASES = (
-    TEST_DATABASES
-    if os.getenv("TEST_DATABASES", default="False") == "True"
-    else PROD_DATABASES
-)
+print("SQLite : " + os.getenv("TEST_DATABASES"))
+DATABASES = TEST_DATABASES if os.getenv("TEST_DATABASES", default="False") == "True" else PROD_DATABASES
 
 AUTH_PASSWORD_VALIDATORS = [
     {

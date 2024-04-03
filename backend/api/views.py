@@ -67,6 +67,7 @@ class UsersViewSet(ModelViewSet):
     permission_classes = (AllowAny,)
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["username", "email"]
+    pagination_class = CustomPageNumberPagination
 
     def get_serializer_class(self):
         """будет использоваться сериализатор `RecipeGetSerializer`
@@ -84,8 +85,8 @@ class UsersViewSet(ModelViewSet):
     )
     def me(self, request):
         """получение профиля автора."""
-        user = request.user
-        serializer = UsersSerializer(user)
+        user = self.request.user
+        serializer = UsersSerializer(user, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(
@@ -99,21 +100,20 @@ class UsersViewSet(ModelViewSet):
     @action(
         methods=["GET"],
         detail=False,
-        permission_classes=[IsAuthenticated],
+        permission_classes=[AllowAny],
     )
     def subscriptions(self, request):
         """Возвращает пользователей,
         на которых подписан текущий пользователь.
         В выдачу добавляются рецепты.."""
         user = request.user
-        subscription = User.objects.filter(following__user=user)
+        users_subscribed = Subscription.objects.filter(user=user)
+        pages = self.paginate_queryset(users_subscribed)
         serializer = SubscriptionsSerializer(
-            subscription,
+            pages,
             many=True,
-            context={'request': request},
         )
-
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return self.get_paginated_response(serializer.data)
 
     @action(
         methods=["POST", "DELETE"],
@@ -123,42 +123,51 @@ class UsersViewSet(ModelViewSet):
     def subscribe(self, request, **kwargs):
         """POST Подписаться на пользователя
         DEL  Отписаться от пользователя."""
-        recipe = get_object_or_404(Recipe, id=kwargs["pk"])
-        user = self.request.user
+
+        subscribed = get_object_or_404(User, id=kwargs["pk"])
+        user = request.user
         if not user.is_anonymous:
-            if self.action == "create":
+            if request.method == "POST":
                 # Добавление рецепта в избранное
-                if not Favourites.objects.filter(
+                if not Subscription.objects.filter(
                     user=user,
-                    recipe=recipe,
+                    subscribed=subscribed,
                 ).exists():
-                    Favourites.objects.create(
+                    Subscription.objects.create(
                         user=user,
-                        recipe=recipe,
+                        subscribed=subscribed,
                     )
-                    serializer = RecipeMinifiedSerializer(recipe)
+                    serializer = RecipeMinifiedSerializer(subscribed)
                     return Response(
                         data=serializer.data,
                         status=status.HTTP_201_CREATED,
                     )
                 else:
                     return Response(
-                        {"Рецепт уже в избранном"},
+                        {"Автор уже в подписках."},
                         status=status.HTTP_400_BAD_REQUEST,
                     )
-            elif self.action == "destroy":
+            if request.method == "DELETE":
                 # Удаление рецепта из избранного
-                if Favourites.objects.filter(
-                    user=request.user,
-                    recipe=recipe,
+                if Subscription.objects.filter(
+                    user=user,
+                    subscribed=subscribed,
                 ).exists():
-                    Favourites.objects.filter(
-                        user=request.user,
-                        recipe=recipe,
+                    Subscription.objects.filter(
+                        user=user,
+                        subscribed=subscribed,
                     ).delete()
-                    return Response({"Рецепт успешно удален из избранного"})
+                    return Response(
+                        {"Автор успешно удален из подписок."},
+                        status=status.HTTP_200_OK,
+                    )
                 else:
-                    return Response({"Рецепт не найден в избранном"})
+                    return Response({"Автор не найден в иподписках"})
+            else:
+                return Response(
+                    {"detail": "Метод не разрешен"},
+                    status=status.HTTP_405_METHOD_NOT_ALLOWED,
+                )
         else:
             return Response(
                 {"Учетные данные не были предоставлены."},
@@ -192,7 +201,8 @@ class RecipeViewSet(ModelViewSet):
     filter_backends = (DjangoFilterBackend,)
     filterset_fields = (
         "author",
-        "name",
+        "tags",
+
     )
     pagination_class = CustomPageNumberPagination
 
@@ -342,34 +352,3 @@ class RecipeViewSet(ModelViewSet):
                 {"Учетные данные не были предоставлены."},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
-
-    @action(
-        methods=["GET"],
-        detail=False,
-        permission_classes=[IsAuthenticated],
-        pagination_class=CustomPageNumberPagination,
-    )
-    def subscriptions(self, request):
-        """Возвращает пользователей,
-        на которых подписан текущий пользователь.
-        В выдачу добавляются рецепты.."""
-        user = request.user
-        queryset = User.objects.filter(following__user=user)
-        subscription = Subscription.objects.filter(user=user)
-        serializer = SubscriptionsSerializer(
-            queryset,
-            many=True,
-            context={'request': request},
-        )
-
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    @action(
-        methods=["POST", "DELETE"],
-        detail=True,
-        permission_classes=[IsAuthenticated],
-    )
-    def subscribe(self, request):
-        """POST Подписаться на пользователя
-        DEL  Отписаться от пользователя."""
-        # if request.method == "POST":

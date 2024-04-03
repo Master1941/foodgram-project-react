@@ -78,11 +78,11 @@ class UsersSerializer(ModelSerializer):
 
     def get_is_subscribed(self, obj) -> bool:
         """Возврвщает False если не подписан на этого пользователя."""
-        request = self.context.get("request")
-        if request is None or request.user.is_anonymous:
+        user = self.context.get("request").user
+        if user.is_anonymous:
             return False
         return Subscription.objects.filter(
-            user=request.user,
+            user=user,
             subscribed=obj,
         ).exists()
 
@@ -102,23 +102,23 @@ class UserCreateSerializer(ModelSerializer):
 
     def create(self, validated_data):
         """Создание нового пользователя"""
-        return User.objects.create_user(**validated_data)
+        # return User.objects.create_user(**validated_data)
 
 
 class SubscriptionsSerializer(ModelSerializer):
     """Серилизатор пользователей, на которых подписан текущий пользователь.
     В выдачу добавляются рецепты.."""
-
+    email = ReadOnlyField(source='subscribed.email')
+    id = ReadOnlyField(source='subscribed.id')
+    username = ReadOnlyField(source='subscribed.username')
+    first_name = ReadOnlyField(source='subscribed.first_name')
+    last_name = ReadOnlyField(source='subscribed.last_name')
     is_subscribed = SerializerMethodField()
-    recipes = RecipeMinifiedSerializer(
-        # many=True,
-        read_only=True,
-        source="recipe_ingredient",
-    )
+    recipes = SerializerMethodField()
     recipes_count = SerializerMethodField()
 
     class Meta:
-        model = User
+        model = Subscription
         fields = (
             "email",
             "id",
@@ -127,40 +127,46 @@ class SubscriptionsSerializer(ModelSerializer):
             "last_name",
             "is_subscribed",  # Подписан ли текущий пользователь на этого
             "recipes",  # Array of objects (RecipeMinified)
-            # "id": 0,
-            # "name": "string",
-            # "image": "http://foodgram.example.org/media/recipes/images/image.jpeg",
-            # "cooking_time": 1
+                # "id": 0,
+                # "name": "string",
+                # "image": "http://foodgram.example.org/media/recipes/images/image.jpeg",
+                # "cooking_time": 1
             "recipes_count",  # Общее количество рецептов пользователя
         )
-        validators = [
-            UniqueTogetherValidator(
-                queryset=Subscription.objects.all(),
-                fields=("user", "subscribed_user"),
-                message=("Вы уже подписаны на этого автора!"),
-            )
-        ]
+        # validators = [
+        #     UniqueTogetherValidator(
+        #         queryset=Subscription.objects.all(),
+        #         fields=("user", "subscribed_user"),
+        #         message=("Вы уже подписаны на этого автора!"),
+        #     )
+        # ]
 
-    def validate_following(self, value):
-        """Запрет подписки на самого себя."""
+    # def validate_following(self, value):
+    #     """Запрет подписки на самого себя."""
 
-        if value == self.context["request"].user:
-            raise ValidationError("Нельзя подписаться на самого себя!")
-        return value
+    #     if value == self.context["request"].user:
+    #         raise ValidationError("Нельзя подписаться на самого себя!")
+    #     return value
 
     def get_is_subscribed(self, obj):
-        """ """
+        """поле отображает подписки пользователя. """
         user = self.context.get("request").user
         if not user.is_anonymous:
             return Subscription.objects.filter(user=user, author=obj).exists()
         return False
 
-    # def get_recipes(self):
-    #     """ """
+    def get_recipes(self, obj):
+        """мини список рецертов пользователя. """
+        request = self.context.get('request')
+        limit = request.GET.get('recipes_limit')
+        recipes = Recipe.objects.filter(author=obj.subscribed)
+        if limit and limit.isdigit():
+            recipes = recipes[:int(limit)]
+        return RecipeMinifiedSerializer(recipes, many=True).data
 
     def get_recipes_count(self, obj):
         """Общее количество рецептов пользователя"""
-        return obj.recipes.count()
+        return Recipe.objects.filter(author=obj.subscribed).count()
 
 
 class Base64ImageField(ImageField):
