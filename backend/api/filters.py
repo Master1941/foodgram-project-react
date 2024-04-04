@@ -28,8 +28,7 @@ User = get_user_model()
 
 
 class RecipeFilter(FilterSet):
-    """Фильтрация по полям is_favorited is_in_shopping_cart author tags
-    """
+    """Фильтрация по полям is_favorited is_in_shopping_cart author tags"""
 
     tags = filters.ModelMultipleChoiceFilter(
         field_name="tags__slug",
@@ -42,7 +41,7 @@ class RecipeFilter(FilterSet):
     )
 
     # is_in_shopping_cart = filters.BooleanFilter(
-    #     method="is_in_shopping_cart",
+    #     method="get_is_in_shopping_cart",
     # )
 
     class Meta:
@@ -54,9 +53,9 @@ class RecipeFilter(FilterSet):
             # "is_in_shopping_cart",
         )
 
-    def get_is_favorited(self, queryset, value):
-        # if self.request.user.is_authenticated and value:
-        #     return queryset.filter(user=self.request.user)
+    def get_is_favorited(self, queryset, ыва, ываe):
+        if self.request.user.is_authenticated:
+            return queryset.filter(favorite__user=self.request.user)
         return queryset
 
     # def get_is_in_shopping_cart(self, queryset, value):
