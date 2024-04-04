@@ -32,7 +32,7 @@ from api.serializers import (
     SubscriptionsSerializer,
     RecipeMinifiedSerializer,
 )
-
+from api.filters import RecipeFilter
 from api.pagination import CustomPageNumberPagination
 from food.models import (
     Tag,
@@ -65,8 +65,6 @@ class UsersViewSet(ModelViewSet):
     serializer_class = UsersSerializer
     # http_method_names = ["GET", "POST", "DEL"]
     permission_classes = (AllowAny,)
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ["username", "email"]
     pagination_class = CustomPageNumberPagination
 
     def get_serializer_class(self):
@@ -81,12 +79,12 @@ class UsersViewSet(ModelViewSet):
     @action(
         methods=["GET"],
         detail=False,
-        permission_classes=[IsAuthenticated],
+        permission_classes=[AllowAny],
     )
     def me(self, request):
         """получение профиля автора."""
         user = self.request.user
-        serializer = UsersSerializer(user, context={'request': request})
+        serializer = UsersSerializer(user, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(
@@ -106,14 +104,22 @@ class UsersViewSet(ModelViewSet):
         """Возвращает пользователей,
         на которых подписан текущий пользователь.
         В выдачу добавляются рецепты.."""
+
         user = request.user
-        users_subscribed = Subscription.objects.filter(user=user)
-        pages = self.paginate_queryset(users_subscribed)
-        serializer = SubscriptionsSerializer(
-            pages,
-            many=True,
-        )
-        return self.get_paginated_response(serializer.data)
+        if user.is_authenticated:
+            users_subscribed = Subscription.objects.filter(user=user)
+            pages = self.paginate_queryset(users_subscribed)
+            serializer = SubscriptionsSerializer(
+                pages,
+                many=True,
+                context={"request": request},
+            )
+            return self.get_paginated_response(serializer.data)
+        else:
+            return Response(
+                {"Учетные данные не были предоставлены."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
 
     @action(
         methods=["POST", "DELETE"],
@@ -181,7 +187,8 @@ class IngredientViewSet(ModelViewSet):
 
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
-    http_method_names = ("get",)
+    # http_method_names = ("get",)
+    permission_classes = (AllowAny,)
 
 
 class TagViewSet(ModelViewSet):
@@ -190,7 +197,8 @@ class TagViewSet(ModelViewSet):
 
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
-    http_method_names = ("get",)
+    # http_method_names = ("get",)
+    permission_classes = (AllowAny,)
 
 
 class RecipeViewSet(ModelViewSet):
@@ -199,11 +207,7 @@ class RecipeViewSet(ModelViewSet):
 
     queryset = Recipe.objects.all()
     filter_backends = (DjangoFilterBackend,)
-    filterset_fields = (
-        "author",
-        "tags",
-
-    )
+    filterset_class = RecipeFilter
     pagination_class = CustomPageNumberPagination
 
     def get_serializer_class(self):

@@ -33,12 +33,12 @@ class CustomUser(AbstractUser):
         help_text="Укажите логин",
         unique=True,
         max_length=USERNAME_MAX_LENGTH,
-        validators=[
-            RegexValidator(
-                regex=r"^[а-яёА-ЯЁ]+$",
-                message="Поле должно содержать только русские буквы.",
-            ),
-        ],
+    #     validators=[
+    #         RegexValidator(
+    #             regex=r"^[а-яёА-ЯЁ]+$",
+    #             message="Поле должно содержать только русские буквы.",
+    #         ),
+    #     ],
     )
     email = models.EmailField(
         "E-mail",

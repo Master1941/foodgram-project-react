@@ -19,13 +19,16 @@
 import base64
 from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
+
+# from rest_framework.validators import UniqueTogetherValidator
 from rest_framework.serializers import (
     ModelSerializer,
     ImageField,
-    StringRelatedField,
+    # StringRelatedField,
     ReadOnlyField,
     # CharField,
     # SlugRelatedField,
+    PrimaryKeyRelatedField,  # для представления отношений "один ко многим"
     # получить строковые представления связанных объектов
     # и передать их в указанное поле вместо id.
     ValidationError,
@@ -33,7 +36,7 @@ from rest_framework.serializers import (
     SerializerMethodField,  # для создания дополнительных полей
     # Field,
 )
-from rest_framework.validators import UniqueTogetherValidator
+
 from food.models import (
     Tag,
     Recipe,
@@ -61,7 +64,7 @@ class RecipeMinifiedSerializer(ModelSerializer):
 
 
 class UsersSerializer(ModelSerializer):
-    """Серилизатор"""
+    """Серилизатор пользователей."""
 
     is_subscribed = SerializerMethodField()
 
@@ -108,11 +111,12 @@ class UserCreateSerializer(ModelSerializer):
 class SubscriptionsSerializer(ModelSerializer):
     """Серилизатор пользователей, на которых подписан текущий пользователь.
     В выдачу добавляются рецепты.."""
-    email = ReadOnlyField(source='subscribed.email')
-    id = ReadOnlyField(source='subscribed.id')
-    username = ReadOnlyField(source='subscribed.username')
-    first_name = ReadOnlyField(source='subscribed.first_name')
-    last_name = ReadOnlyField(source='subscribed.last_name')
+
+    email = ReadOnlyField(source="subscribed.email")
+    id = ReadOnlyField(source="subscribed.id")
+    username = ReadOnlyField(source="subscribed.username")
+    first_name = ReadOnlyField(source="subscribed.first_name")
+    last_name = ReadOnlyField(source="subscribed.last_name")
     is_subscribed = SerializerMethodField()
     recipes = SerializerMethodField()
     recipes_count = SerializerMethodField()
@@ -127,19 +131,12 @@ class SubscriptionsSerializer(ModelSerializer):
             "last_name",
             "is_subscribed",  # Подписан ли текущий пользователь на этого
             "recipes",  # Array of objects (RecipeMinified)
-                # "id": 0,
-                # "name": "string",
-                # "image": "http://foodgram.example.org/media/recipes/images/image.jpeg",
-                # "cooking_time": 1
+            # "id": 0,
+            # "name": "string",
+            # "image": "http://foodgram.example.org/media/recipes/images/image.jpeg",
+            # "cooking_time": 1
             "recipes_count",  # Общее количество рецептов пользователя
         )
-        # validators = [
-        #     UniqueTogetherValidator(
-        #         queryset=Subscription.objects.all(),
-        #         fields=("user", "subscribed_user"),
-        #         message=("Вы уже подписаны на этого автора!"),
-        #     )
-        # ]
 
     # def validate_following(self, value):
     #     """Запрет подписки на самого себя."""
@@ -149,24 +146,29 @@ class SubscriptionsSerializer(ModelSerializer):
     #     return value
 
     def get_is_subscribed(self, obj):
-        """поле отображает подписки пользователя. """
-        user = self.context.get("request").user
-        if not user.is_anonymous:
-            return Subscription.objects.filter(user=user, author=obj).exists()
-        return False
+        """поле отображает подписки пользователя."""
+        # user = self.context.get("request").user
+        # if not user.is_anonymous:
+        #     return Subscription.objects.filter(user=user, author=obj).exists()
+        return True
 
     def get_recipes(self, obj):
-        """мини список рецертов пользователя. """
-        request = self.context.get('request')
-        limit = request.GET.get('recipes_limit')
+        """мини список рецертов пользователя."""
+        request = self.context.get("request")
+        limit = request.GET.get("recipes_limit")
         recipes = Recipe.objects.filter(author=obj.subscribed)
         if limit and limit.isdigit():
-            recipes = recipes[:int(limit)]
+            recipes = recipes[: int(limit)]
         return RecipeMinifiedSerializer(recipes, many=True).data
 
     def get_recipes_count(self, obj):
         """Общее количество рецептов пользователя"""
         return Recipe.objects.filter(author=obj.subscribed).count()
+
+
+#
+#
+#
 
 
 class Base64ImageField(ImageField):
@@ -217,22 +219,15 @@ class RecipeIngredientSerializer(ModelSerializer):
 class RecipeGetSerializer(ModelSerializer):
     """Cериализатор для просмотра рецептов."""
 
-    image = Base64ImageField()  # required=False, allow_null=True)
-    tags = TagSerializer(
-        many=True,
-        read_only=True,
-    )
-
+    image = Base64ImageField()
+    tags = TagSerializer(many=True)
     ingredients = RecipeIngredientSerializer(
         many=True,
-        read_only=True,
         source="recipe_ingredient",
     )
     is_favorited = SerializerMethodField()
     is_in_shopping_cart = SerializerMethodField()
-    author = UsersSerializer(
-        read_only=True,
-    )
+    author = UsersSerializer()
 
     class Meta:
         model = Recipe
@@ -261,6 +256,12 @@ class RecipeGetSerializer(ModelSerializer):
             "image",
             "text",
             "cooking_time",
+        )
+        read_only_fields = (
+            "is_favorited",
+            "is_in_shopping_cart",
+            "ingredients",
+            "tags",
         )
 
     def get_is_favorited(self, obj):
@@ -302,6 +303,11 @@ class RecipeCreatSerializer(ModelSerializer):
 
     ingredients = IngredientCreatRecipeSerializize()
     image = Base64ImageField()
+    tags = PrimaryKeyRelatedField(
+        many=True,
+        queryset=Tag.objects.all(),
+    )
+    author = UsersSerializer(read_only=True)
 
     class Meta:
         model = Recipe

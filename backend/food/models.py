@@ -256,10 +256,11 @@ class Favourites(models.Model):
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
+        related_name ="favorite"
     )
 
     class Meta:
-        default_related_name = "favorite"
+        # default_related_name = "favorite"
         verbose_name = "Избранный рецепт"
         verbose_name_plural = "Избранные рецепты"
 
