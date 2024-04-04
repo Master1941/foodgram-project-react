@@ -78,7 +78,7 @@ PROD_DATABASES = {
 }
 print("SQLite : " + os.getenv("TEST_DATABASES"))
 DATABASES = TEST_DATABASES if os.getenv("TEST_DATABASES", default="False") == "True" else PROD_DATABASES
-
+print(DATABASES)
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",

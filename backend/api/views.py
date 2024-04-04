@@ -41,7 +41,7 @@ from food.models import (
     Favourites,
     ShoppingList,
     Subscription,
-    # RecipeIngredient,
+    RecipeIngredient,
 )
 
 User = get_user_model()
@@ -187,7 +187,7 @@ class IngredientViewSet(ModelViewSet):
 
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
-    # http_method_names = ("get",)
+    http_method_names = ("get",)
     permission_classes = (AllowAny,)
 
 
@@ -197,7 +197,7 @@ class TagViewSet(ModelViewSet):
 
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
-    # http_method_names = ("get",)
+    http_method_names = ("get",)
     permission_classes = (AllowAny,)
 
 
@@ -228,8 +228,9 @@ class RecipeViewSet(ModelViewSet):
         Важно, чтобы контент файла удовлетворял требованиям задания.
         Доступно только авторизованным пользователям."""
         # user = request.user
+        # if not user.is_anonymous:
 
-        # RecipeIngredient.objects.filter(
+        # list_ingredients =  RecipeIngredient.objects.filter(
         #     recipe__shopping_list__user=request.user
         # ).values("recipe__name", "recip__mesuremet_unit").annotation(
         #     amount_sum=Sum("amount")

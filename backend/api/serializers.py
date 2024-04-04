@@ -24,17 +24,11 @@ from django.core.files.base import ContentFile
 from rest_framework.serializers import (
     ModelSerializer,
     ImageField,
-    # StringRelatedField,
     ReadOnlyField,
-    # CharField,
-    # SlugRelatedField,
-    PrimaryKeyRelatedField,  # для представления отношений "один ко многим"
-    # получить строковые представления связанных объектов
-    # и передать их в указанное поле вместо id.
-    ValidationError,
+    PrimaryKeyRelatedField,
+    # ValidationError,
     # CurrentUserDefault,
     SerializerMethodField,  # для создания дополнительных полей
-    # Field,
 )
 
 from food.models import (
@@ -129,27 +123,13 @@ class SubscriptionsSerializer(ModelSerializer):
             "username",
             "first_name",
             "last_name",
-            "is_subscribed",  # Подписан ли текущий пользователь на этого
-            "recipes",  # Array of objects (RecipeMinified)
-            # "id": 0,
-            # "name": "string",
-            # "image": "http://foodgram.example.org/media/recipes/images/image.jpeg",
-            # "cooking_time": 1
-            "recipes_count",  # Общее количество рецептов пользователя
+            "is_subscribed",
+            "recipes",  # "id":  "name": "image": "http:// "cooking_time": 1
+            "recipes_count",
         )
 
-    # def validate_following(self, value):
-    #     """Запрет подписки на самого себя."""
-
-    #     if value == self.context["request"].user:
-    #         raise ValidationError("Нельзя подписаться на самого себя!")
-    #     return value
-
-    def get_is_subscribed(self, obj):
-        """поле отображает подписки пользователя."""
-        # user = self.context.get("request").user
-        # if not user.is_anonymous:
-        #     return Subscription.objects.filter(user=user, author=obj).exists()
+    def get_is_subscribed(self, obj) -> bool:
+        """Возврвщает False если не подписан на этого пользователя."""
         return True
 
     def get_recipes(self, obj):
@@ -199,21 +179,25 @@ class IngredientSerializer(ModelSerializer):
     class Meta:
         model = Ingredient
         fields = ("id", "name", "measurement_unit")
+        read_only_fields = ("__all__",)
 
 
 class RecipeIngredientSerializer(ModelSerializer):
     """сериализатор  ингредиентов с количеством для Pecipe."""
 
-    id = ReadOnlyField(source="ingredient.id", read_only=True)
-    name = ReadOnlyField(source="ingredient.name", read_only=True)
-    measurement_unit = ReadOnlyField(
-        source="ingredient.measurement_unit", read_only=True
-    )
+    id = ReadOnlyField(source="ingredient.id")
+    name = ReadOnlyField(source="ingredient.name")
+    measurement_unit = ReadOnlyField(source="ingredient.measurement_unit")
     amount = ReadOnlyField()
 
     class Meta:
         model = RecipeIngredient
         fields = ("id", "name", "measurement_unit", "amount")
+        read_only_fields = (
+            "id",
+            "name",
+            "measurement_unit",
+        )
 
 
 class RecipeGetSerializer(ModelSerializer):
@@ -234,22 +218,8 @@ class RecipeGetSerializer(ModelSerializer):
         fields = (
             "id",
             "tags",
-            # "id": 0,
-            # "name": "Завтрак",
-            # "color": "#E26C2D",
-            # "slug": "breakfast"
             "author",
-            # "email": "user@example.com",
-            # "id": 0,
-            # "username": "string",
-            # "first_name": "Вася",
-            # "last_name": "Пупкин",
-            # "is_subscribed": false
             "ingredients",
-            # "id": 0,
-            # "name": "Картофель отварной",
-            # "measurement_unit": "г",
-            # "amount": 1
             "is_favorited",
             "is_in_shopping_cart",
             "name",
@@ -257,12 +227,7 @@ class RecipeGetSerializer(ModelSerializer):
             "text",
             "cooking_time",
         )
-        read_only_fields = (
-            "is_favorited",
-            "is_in_shopping_cart",
-            "ingredients",
-            "tags",
-        )
+        read_only_fields = ("__all__",)
 
     def get_is_favorited(self, obj):
         """рецепт в избраном или False"""

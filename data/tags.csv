@@ -1,6 +1,6 @@
 id,name,color,slug
-12,ланч,#ff6347,spaghetti
-13,обед,#58ff90,lunch
-14,завтрак,#ff1493,shashlyk
-15,ужин,#00008b,noodles
-16,кофе тайм,#ffd700,plov
+12,обед,#58ff90,lunch
+22,завтрак,#ff1493,shashlyk
+32,ужин,#00008b,noodles
+4,кофе тайм,#ffd700,plov
+5,ланч,#ff6347,spaghetti
