@@ -1,11 +1,11 @@
 id,author,name,image,text,cooking_time
-33,100,сырники,images/sirnik.pdf,рецепт сырника,123
+33,1,сырники,images/sirnik.pdf,рецепт сырника,123
 34,101,пироimages/pirog.pdf,рецепт пирожков,90
 35,102,борщ,images/borsch.pdf,рецепт борща,180
 36,103,шашлык,images/shashlyk.pdf,рецепт шашлыка,240
 37,104,салат,images/salad.pdf,рецепт салата,45
 38,105,суп,images/soup.pdf,рецепт супа,60
-39,106,пицца,images/pizza.pdf,рецепт пиццы,0
+39,105,пицца,images/pizza.pdf,рецепт пиццы,0
 40,104,торт,images/cake.pdf,рецепт торта,210
 41,104,салат Цезарь,images/caesar_salad.pdf,рецепт салата Цезарь,60
 42,102,фаршированный краб,images/stuffed_crab.pdf,рецепт фаршированного краба,150
@@ -15,5 +15,5 @@ id,author,name,image,text,cooking_time
 46,103,суп по-китайски,images/chinese_soup.pdf,рецепт суп по-китайски,90
 47,104,фруктовый салат,images/fruit_salad.pdf,рецепт фруктового салата,30
 48,105,компот,images/compote.pdf,рецепт компота,120
-49,106,плов,images/plov.pdf,рецепт плов,180
+49,102,плов,images/plov.pdf,рецепт плов,180
 50,103,плов,images/plov.pdf,рецепт плов,180
