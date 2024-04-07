@@ -19,23 +19,26 @@ services:
     build:
       context: ../backend
       dockerfile: Dockerfile
-    container_name: backendProd
-    volumes:
-      - static_Prod:/static/
-      - media_Prod:/app/media/
-      - docs_Prod:/app/api/docs/
+    env_file: .env
     depends_on:
       - db
-    env_file: .env
+    container_name: backendProd
+    volumes:
+      - static_Prod:/backend_static/
+      - media_Prod:/app/media/
+      - docs_Prod:/app/api/docs/
+
 
   frontend:
     build:
       context: ../frontend
       dockerfile: Dockerfile
     container_name: frontendProd
-    command: cp -r /app/build/. /static/
+    command: cp -r /app/build/. /frontend_static/
+    # command: cp -r /app/docs/. /frontend_static/app/docs/
     volumes:
-      - static_Prod:/static/
+      - static_Prod:/frontend_static
+      - static_Prod:/app/docs/
 
   nginx:
     build:
@@ -45,9 +48,8 @@ services:
     ports:
       - "8888:80"
     volumes:
-      # - static_Prod:/usr/share/nginx/html/
       - docs_Prod:/usr/share/nginx/html/api/docs/
-      - static_Prod:/static/
+      - static_Prod:/staticfiles
       - media_Prod:/app/media/
     depends_on:
       - backend

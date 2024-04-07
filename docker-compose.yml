@@ -24,7 +24,7 @@ services:
     container_name: backendiwe
     env_file: .env
     volumes:
-      - static_2:/backend_static
+      - static_2:/backend_static/
       - media_2:/app/media/
       - docs_2:/app/api/docs
     depends_on:
