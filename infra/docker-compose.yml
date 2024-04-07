@@ -1,17 +1,54 @@
-version: '3.3'
+version: '3'
+
+volumes:
+  static_Prod:
+  media_Prod:
+  db_data_Prod:
+  docs_Prod:
+
 services:
+
+  db:
+    image: postgres:13
+    container_name: PostgresProd
+    volumes:
+      - db_data_Prod:/var/lib/postgresql/data
+    env_file: .env
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: backendProd
+    volumes:
+      - static_Prod:/static/
+      - media_Prod:/app/media/
+      - docs_Prod:/app/api/docs/
+    depends_on:
+      - db
+    env_file: .env
 
   frontend:
     build:
       context: ../frontend
       dockerfile: Dockerfile
+    container_name: frontendProd
+    command: cp -r /app/build/. /static/
     volumes:
-      - ../frontend/:/app/result_build/
+      - static_Prod:/static/
+
   nginx:
-    image: nginx:1.19.3
+    build:
+      context: ../nginx
+      dockerfile: Dockerfile
+    container_name: nginxProd
     ports:
-      - "80:80"
+      - "8888:80"
     volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf
-      - ../frontend/build:/usr/share/nginx/html/
-      - ../docs/:/usr/share/nginx/html/api/docs/
+      # - static_Prod:/usr/share/nginx/html/
+      - docs_Prod:/usr/share/nginx/html/api/docs/
+      - static_Prod:/static/
+      - media_Prod:/app/media/
+    depends_on:
+      - backend
+      - frontend
