@@ -35,10 +35,8 @@ services:
       dockerfile: Dockerfile
     container_name: frontendProd
     command: cp -r /app/build/. /frontend_static/
-    # command: cp -r /app/docs/. /frontend_static/app/docs/
     volumes:
       - static_Prod:/frontend_static
-      - static_Prod:/app/docs/
 
   nginx:
     build:
