@@ -13,13 +13,15 @@ services:
     container_name: PostgresProd
     volumes:
       - db_data_Prod:/var/lib/postgresql/data
-    env_file: .env
+    env_file:
+      - ./.env
 
   backend:
     build:
       context: ../backend
       dockerfile: Dockerfile
-    env_file: .env
+    env_file:
+      - ./.env
     depends_on:
       - db
     container_name: backendProd

@@ -76,9 +76,19 @@ PROD_DATABASES = {
         "PORT": os.getenv("DB_PORT"),
     }
 }
-print("SQLite : " + os.getenv("TEST_DATABASES"))
-DATABASES = TEST_DATABASES if os.getenv("TEST_DATABASES", default="False") == "True" else PROD_DATABASES
-print(DATABASES)
+
+if os.getenv("TEST_DATABASES") == "True":
+    print("  <SQLite> " * 10)
+else:
+    print(" <PostgreSQL> " * 10)
+
+DATABASES = (
+    TEST_DATABASES
+    if os.getenv("TEST_DATABASES", default="False") == "True"
+    else PROD_DATABASES
+)
+# print(DATABASES)
+
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
@@ -105,7 +115,7 @@ USE_L10N = True
 USE_TZ = True
 
 STATIC_URL = "/static/"
-STATIC_ROOT = BASE_DIR / "collected_static"
+STATIC_ROOT = BASE_DIR / "collected_static"  # из этой дериктории копируем в /backend_static/static/
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
@@ -116,7 +126,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 DJOSER = {
     "LOGIN_FIELD": "email",  # авторизация по  email  !!!!!!!!!!!!!!!!!!!!!!!!
-    'SEND_ACTIVATION_EMAIL': False,  # Отправлять ли пользователям электронное письмо с активацией после регистрации.
+    "SEND_ACTIVATION_EMAIL": False,  # Отправлять ли пользователям электронное письмо с активацией после регистрации.
 }
 
 REST_FRAMEWORK = {

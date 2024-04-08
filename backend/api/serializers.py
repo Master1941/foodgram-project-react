@@ -19,6 +19,7 @@
 import base64
 from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
+from django.shortcuts import get_object_or_404
 
 # from rest_framework.validators import UniqueTogetherValidator
 from rest_framework.serializers import (
@@ -26,7 +27,7 @@ from rest_framework.serializers import (
     ImageField,
     ReadOnlyField,
     PrimaryKeyRelatedField,
-    # ValidationError,
+    ValidationError,
     # CurrentUserDefault,
     SerializerMethodField,  # для создания дополнительных полей
 )
@@ -266,13 +267,16 @@ class RecipeCreatSerializer(ModelSerializer):
     Для сохранения ингредиентов и тегов рецепта потребуется
     переопределить методы create и update в ModelSerializer."""
 
-    ingredients = IngredientCreatRecipeSerializize()
+    ingredients = IngredientCreatRecipeSerializize(
+        many=True,
+        source="recipe_ingredient",
+    )
     image = Base64ImageField()
     tags = PrimaryKeyRelatedField(
         many=True,
         queryset=Tag.objects.all(),
     )
-    author = UsersSerializer(read_only=True)
+    # author = UsersSerializer(read_only=True)
 
     class Meta:
         model = Recipe
@@ -289,27 +293,42 @@ class RecipeCreatSerializer(ModelSerializer):
             "cooking_time",
         )
 
-    # def create(self, validated_data):
-    #     """Спринт 10/17 → Тема 1/3: Django Rest Framework → Урок 9/15"""
-    #     if "tag" not in self.initial_data:
-    #         post = Recipe.objects.create(**validated_data)
-    #         return post
-    #     tags_data = validated_data.pop("tag")
-    #     post = Recipe.objects.create(**validated_data)
-    #     for tag_data in tags_data:
-    #         tag, _ = Tag.objects.get_or_create(**tag_data)
-    #         TagRecipe.objects.create(tag=tag, post=post)
-    #     return post
+    def create(self, validated_data):
+        """Спринт 10/17 → Тема 1/3: Django Rest Framework → Урок 9/15"""
 
-    # def update(self, instance, validated_data):
-    #     """Для сохранения ингредиентов и тегов рецепта потребуется
-    #     переопределить методы create и update в ModelSerializer. """
+        # if "tag" not in self.initial_data:
+        #     post = Recipe.objects.create(**validated_data)
+        #     return post
+        author = self.context.get("request").user
+        ingredients_data = validated_data.pop("recipe_ingredient")
+        tags_data = validated_data.pop("tag")
+        recipe = Recipe.objects.create(
+            author=author,
+            **validated_data,
+        )
+        recipe.tags.set(tags_data)
+        for ingredient in ingredients_data:
+            amount = ingredient["amount"]
+            ingredient = get_object_or_404(Ingredient, pk=ingredient["id"])
+            if (RecipeIngredient.objects.filter(
+                    recipe=recipe, ingredient=ingredient).exists()):
+                raise ValidationError(
+                    {'errors': 'нельзя добавить одинаковые ингредиенты'}
+                )
+            RecipeIngredient.objects.create(
+                recipe=recipe, ingredient=ingredient, amount=amount
+            )
+        return recipe
 
-    #     instance.name = validated_data.get("name", instance.name)
-    #     instance.color = validated_data.get("color", instance.color)
-    #     instance.birth_year = validated_data.get("birth_year", instance.birth_year)
-    #     instance.image = validated_data.get("image", instance.image)
-    #     if "achievements" in validated_data:
+    def update(self, instance, validated_data):
+        """Для сохранения ингредиентов и тегов рецепта потребуется
+        переопределить методы create и update в ModelSerializer."""
+
+        # instance.name = validated_data.get("name", instance.name)
+        # instance.color = validated_data.get("color", instance.color)
+        # instance.birth_year = validated_data.get("birth_year", instance.birth_year)
+        # instance.image = validated_data.get("image", instance.image)
+        # if "achievements" in validated_data:
     #         achievements_data = validated_data.pop("achievements")
     #         lst = []
     #         for achievement in achievements_data:
