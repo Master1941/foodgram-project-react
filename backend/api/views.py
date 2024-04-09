@@ -21,6 +21,7 @@ from rest_framework.permissions import (
     AllowAny,
 )
 from rest_framework.decorators import action
+from djoser.serializers import SetPasswordSerializer
 
 from api.serializers import (
     TagSerializer,
@@ -31,6 +32,7 @@ from api.serializers import (
     UserCreateSerializer,
     SubscriptionsSerializer,
     RecipeMinifiedSerializer,
+
 )
 from api.filters import RecipeFilter
 from api.pagination import CustomPageNumberPagination
@@ -94,6 +96,15 @@ class UsersViewSet(ModelViewSet):
     )
     def set_password(self, request):
         """Изменение пароля текущего пользователя."""
+
+        serializer = SetPasswordSerializer(request.user, data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(
+                {"Пароль успешно изменен"},
+                status=status.HTTP_204_NO_CONTENT,
+            )
+        return Response("Пароль не изменен", status=status.HTTP_400_BAD_REQUEST)
 
     @action(
         methods=["GET"],
@@ -240,7 +251,9 @@ class RecipeViewSet(ModelViewSet):
         # return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(
-        methods=["POST", "DELETE"], detail=True, permission_classes=[IsAuthenticated]
+        methods=["POST", "DELETE"],
+        detail=True,
+        permission_classes=[IsAuthenticated],
     )
     def shopping_cart(self, request, **kwargs):
         """POST  Добавить рецепт в список покупок
