@@ -40,26 +40,56 @@ http://localhost/api/recipes/{id}/favorite/
 http://localhost/api/ingredients/
 http://localhost/api/ingredients/{id}/
 """
-from django.urls import include, path
+
+from django.urls import path, include
 from rest_framework.routers import DefaultRouter
+from djoser.views import UserViewSet
 
 from api.views import (
     TagViewSet,
     RecipeViewSet,
     IngredientViewSet,
-    UsersViewSet,
+    MeUsersViewSet,
 )
 
 app_name = "api"
 
 
 router_v1 = DefaultRouter()
-router_v1.register("users", UsersViewSet, basename="users")
+router_v1.register("users", MeUsersViewSet, basename="users")
 router_v1.register("tags", TagViewSet, basename="tags")
 router_v1.register("recipes", RecipeViewSet, basename="recipes")
 router_v1.register("ingredients", IngredientViewSet, basename="ingredients")
 
 urlpatterns = [
     path("", include(router_v1.urls)),
-    path("auth/", include('djoser.urls.authtoken')),  # Работа с токенами
+    # path(
+    #     "users/subscriptions/",
+    #     MeUsersViewSet.as_view({"get": "subscriptions"}),
+    #     name="user-subscriptions",
+    # ),
+    # path(
+    #     "users/<int:pk>/subscribe/",
+    #     MeUsersViewSet.as_view({"post": "subscribe", "delete": "subscribe"}),
+    #     name="user-subscribe",
+    # ),
+    # # только нужные эндпоинты из djoser
+    # path(
+    #     "users/",
+    #     UserViewSet.as_view({"get": "list", "post": "create"}),
+    #     name="user-list",
+    # ),
+    # path(
+    #     "users/<int:pk>/",
+    #     UserViewSet.as_view({"get": "retrieve"}),
+    #     name="user-detail",
+    # ),
+    # path("users/me/", UserViewSet.as_view({"get": "me"}), name="user-me"),
+    # path(
+    #     "users/set_password/",
+    #     UserViewSet.as_view({"post": "set_password"}),
+    #     name="user-set-password",
+    # ),
+    # path("", include("djoser.urls")),
+    path("auth/", include("djoser.urls.authtoken")),  # Работа с токенами
 ]

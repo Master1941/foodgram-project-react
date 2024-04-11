@@ -12,7 +12,9 @@ SECRET_KEY = os.getenv("SECRET_KEY", "key")
 DEBUG = os.getenv("DEBUG", "True") == "True"
 
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1 localhost").split()
+
 print(ALLOWED_HOSTS)
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -115,7 +117,9 @@ USE_L10N = True
 USE_TZ = True
 
 STATIC_URL = "/static/"
-STATIC_ROOT = BASE_DIR / "collected_static"  # из этой дериктории копируем в /backend_static/static/
+STATIC_ROOT = (
+    BASE_DIR / "collected_static"
+)  # из этой дериктории копируем в /backend_static/static/
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
@@ -127,6 +131,29 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 DJOSER = {
     "LOGIN_FIELD": "email",  # авторизация по  email  !!!!!!!!!!!!!!!!!!!!!!!!
     "SEND_ACTIVATION_EMAIL": False,  # Отправлять ли пользователям электронное письмо с активацией после регистрации.
+    # 'USER_ID_FIELD': 'id',
+    "SERIALIZERS": {
+        "user": "api.serializers.MeUsersSerializer",
+        "user_create": "api.serializers.MeUserCreateSerializer",
+    },
+    "PERMISSIONS":{
+        'activation': ['rest_framework.permissions.AllowAny'],
+        'password_reset': ['rest_framework.permissions.AllowAny'],
+        'password_reset_confirm': ['rest_framework.permissions.AllowAny'],
+        'set_password': ['djoser.permissions.CurrentUserOrAdmin'],
+        'username_reset': ['rest_framework.permissions.AllowAny'],
+        'username_reset_confirm': ['rest_framework.permissions.AllowAny'],
+        'set_username': ['djoser.permissions.CurrentUserOrAdmin'],
+        'user_create': ['rest_framework.permissions.AllowAny'],
+        'user_delete': ['djoser.permissions.CurrentUserOrAdmin'],
+        # 'user': ['djoser.permissions.CurrentUserOrAdmin'],
+
+        'user': ['rest_framework.permissions.IsAuthenticatedOrReadOnly'],  # <<<
+
+        'user_list': ['djoser.permissions.CurrentUserOrAdmin'],
+        'token_create': ['rest_framework.permissions.AllowAny'],
+        'token_destroy': ['rest_framework.permissions.IsAuthenticated'],
+    },
 }
 
 REST_FRAMEWORK = {

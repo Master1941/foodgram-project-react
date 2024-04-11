@@ -19,23 +19,25 @@
 import base64
 from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
-from django.core.validators import MinValueValidator
+
+# from django.core.validators import MinValueValidator
 from django.shortcuts import get_object_or_404
 from django.db import transaction
-
-# from rest_framework.validators import UniqueTogetherValidator
+from djoser.serializers import UserCreateSerializer, UserSerializer
+from rest_framework.validators import UniqueTogetherValidator
 from rest_framework.serializers import (
     ModelSerializer,
     ImageField,
     ReadOnlyField,
     PrimaryKeyRelatedField,
-    ValidationError,
-    CharField,
+    # ValidationError,
+    # CharField,
     IntegerField,
     # CurrentUserDefault,
     SerializerMethodField,  # для создания дополнительных полей
 )
-from food.constants import FIELD_MIN_AMOUNT
+
+# from food.constants import FIELD_MIN_AMOUNT
 
 from food.models import (
     Tag,
@@ -63,12 +65,12 @@ class RecipeMinifiedSerializer(ModelSerializer):
         )
 
 
-class UsersSerializer(ModelSerializer):
+class MeUsersSerializer(UserSerializer):
     """Серилизатор пользователей."""
 
     is_subscribed = SerializerMethodField()
 
-    class Meta:
+    class Meta(UserSerializer.Meta):
         model = User
         fields = (
             "email",
@@ -78,6 +80,7 @@ class UsersSerializer(ModelSerializer):
             "last_name",
             "is_subscribed",  # есть в гет запросе
         )
+        read_only_fields = ("is_subscribed",)
 
     def get_is_subscribed(self, obj) -> bool:
         """Возврвщает False если не подписан на этого пользователя."""
@@ -91,10 +94,10 @@ class UsersSerializer(ModelSerializer):
         ).exists()
 
 
-class UserCreateSerializer(ModelSerializer):
+class MeUserCreateSerializer(UserCreateSerializer):
     """Серилизатор"""
 
-    class Meta:
+    class Meta(MeUsersSerializer.Meta):
         model = User
         fields = (
             "email",
@@ -104,26 +107,17 @@ class UserCreateSerializer(ModelSerializer):
             "password",
         )
 
-    # def create(self, validated_data):
-    #     """Создание нового пользователя"""
-    #     # return User.objects.create_user(**validated_data)
 
-
-class SubscriptionsSerializer(ModelSerializer):
+class SubscriptionsSerializer(MeUsersSerializer):
     """Серилизатор пользователей, на которых подписан текущий пользователь.
-    В выдачу добавляются рецепты.."""
+    В выдачу добавляются рецепты.
+    # recipes_limit	- Количество объектов внутри поля recipes."""
 
-    email = ReadOnlyField(source="subscribed.email")
-    id = ReadOnlyField(source="subscribed.id")
-    username = ReadOnlyField(source="subscribed.username")
-    first_name = ReadOnlyField(source="subscribed.first_name")
-    last_name = ReadOnlyField(source="subscribed.last_name")
-    is_subscribed = SerializerMethodField()
     recipes = SerializerMethodField()
     recipes_count = SerializerMethodField()
 
     class Meta:
-        model = Subscription
+        model = User
         fields = (
             "email",
             "id",
@@ -131,26 +125,33 @@ class SubscriptionsSerializer(ModelSerializer):
             "first_name",
             "last_name",
             "is_subscribed",
-            "recipes",  # "id":  "name": "image": "http:// "cooking_time": 1
+            "recipes",  # . {"id",  "name", "image", "cooking_time",}
             "recipes_count",
         )
-
-    def get_is_subscribed(self, obj) -> bool:
-        """Возврвщает False если не подписан на этого пользователя."""
-        return True
 
     def get_recipes(self, obj):
         """мини список рецертов пользователя."""
         request = self.context.get("request")
         limit = request.GET.get("recipes_limit")
-        recipes = Recipe.objects.filter(author=obj.subscribed)
+        recipes = Recipe.objects.filter(author=obj)
         if limit and limit.isdigit():
             recipes = recipes[: int(limit)]
-        return RecipeMinifiedSerializer(recipes, many=True).data
+        return RecipeMinifiedSerializer(
+            recipes,
+            many=True,
+            context={"request": self.context.get("request")},
+        ).data
 
     def get_recipes_count(self, obj):
         """Общее количество рецептов пользователя"""
-        return Recipe.objects.filter(author=obj.subscribed).count()
+        # Получать подписки текущего пользователя
+        subscriptions = Subscription.objects.filter(user=obj)
+
+        # Получить список пользователей, на которых подписан текущий пользователь
+        subscribed_users = subscriptions.values_list("subscribed", flat=True)
+
+        # Подсчитывайте рецепты, созданные подписанными пользователями
+        return Recipe.objects.filter(author__in=subscribed_users).count()
 
 
 #
@@ -218,7 +219,7 @@ class RecipeGetSerializer(ModelSerializer):
     )
     is_favorited = SerializerMethodField()
     is_in_shopping_cart = SerializerMethodField()
-    author = UsersSerializer()
+    author = MeUsersSerializer()
 
     class Meta:
         model = Recipe
@@ -262,19 +263,6 @@ class IngredientCreatRecipeSerializize(ModelSerializer):
 
     id = IntegerField()
     amount = IntegerField()
-    # id = PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
-    # amount = IntegerField(
-    #     write_only=True,
-    #     validators=(
-    #         MinValueValidator(
-    #             limit_value=FIELD_MIN_AMOUNT,
-    #             message=(
-    #                 f"""Количество ингредиента не может
-    #                 быть меньше {FIELD_MIN_AMOUNT}""",
-    #             ),
-    #         ),
-    #     ),
-    # )
 
     class Meta:
         model = RecipeIngredient
@@ -299,7 +287,6 @@ class RecipeCreatSerializer(ModelSerializer):
         many=True,
         queryset=Tag.objects.all(),
     )
-    # author = UsersSerializer(read_only=True)
 
     class Meta:
         model = Recipe

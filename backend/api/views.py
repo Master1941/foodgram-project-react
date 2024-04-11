@@ -18,21 +18,20 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import (
     IsAuthenticated,
-    AllowAny,
+    # AllowAny,
+    IsAuthenticatedOrReadOnly,
 )
+from djoser.permissions import CurrentUserOrAdmin
 from rest_framework.decorators import action
-from djoser.serializers import SetPasswordSerializer
 
+from djoser.views import UserViewSet
 from api.serializers import (
     TagSerializer,
     IngredientSerializer,
     RecipeGetSerializer,
     RecipeCreatSerializer,
-    UsersSerializer,
-    UserCreateSerializer,
     SubscriptionsSerializer,
     RecipeMinifiedSerializer,
-
 )
 from api.filters import RecipeFilter
 from api.pagination import CustomPageNumberPagination
@@ -43,13 +42,13 @@ from food.models import (
     Favourites,
     ShoppingList,
     Subscription,
-    RecipeIngredient,
+    # RecipeIngredient,
 )
 
 User = get_user_model()
 
 
-class UsersViewSet(ModelViewSet):
+class MeUsersViewSet(UserViewSet):
     """
     Пользователи
     http://localhost/api/users/
@@ -63,53 +62,14 @@ class UsersViewSet(ModelViewSet):
     http://localhost/api/users/{id}/subscribe/
     """
 
-    queryset = User.objects.all()
-    serializer_class = UsersSerializer
-    # http_method_names = ["GET", "POST", "DEL"]
-    permission_classes = (AllowAny,)
     pagination_class = CustomPageNumberPagination
-
-    def get_serializer_class(self):
-        """будет использоваться сериализатор `RecipeGetSerializer`
-        а для остальных методов будет использоваться `RecipeCreateSerializer`
-        """
-
-        if self.action in ("retrieve", "list"):
-            return UsersSerializer
-        return UserCreateSerializer
+    queryset = User.objects.all()
 
     @action(
         methods=["GET"],
-        detail=False,
-        permission_classes=[AllowAny],
-    )
-    def me(self, request):
-        """получение профиля автора."""
-        user = self.request.user
-        serializer = UsersSerializer(user, context={"request": request})
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    @action(
-        methods=["POST"],
         detail=False,
         permission_classes=[IsAuthenticated],
-    )
-    def set_password(self, request):
-        """Изменение пароля текущего пользователя."""
-
-        serializer = SetPasswordSerializer(request.user, data=request.data)
-        if serializer.is_valid(raise_exception=True):
-            serializer.save()
-            return Response(
-                {"Пароль успешно изменен"},
-                status=status.HTTP_204_NO_CONTENT,
-            )
-        return Response("Пароль не изменен", status=status.HTTP_400_BAD_REQUEST)
-
-    @action(
-        methods=["GET"],
-        detail=False,
-        permission_classes=[AllowAny],
+        serializer_class=SubscriptionsSerializer,
     )
     def subscriptions(self, request):
         """Возвращает пользователей,
@@ -117,78 +77,76 @@ class UsersViewSet(ModelViewSet):
         В выдачу добавляются рецепты.."""
 
         user = request.user
-        if user.is_authenticated:
-            users_subscribed = Subscription.objects.filter(user=user)
-            pages = self.paginate_queryset(users_subscribed)
-            serializer = SubscriptionsSerializer(
-                pages,
-                many=True,
-                context={"request": request},
-            )
-            return self.get_paginated_response(serializer.data)
-        else:
-            return Response(
-                {"Учетные данные не были предоставлены."},
-                status=status.HTTP_401_UNAUTHORIZED,
-            )
+        users_subscribed = User.objects.filter(subscribed__user=user)
+        pages = self.paginate_queryset(users_subscribed)
+        serializer = SubscriptionsSerializer(
+            pages,
+            many=True,
+            context={"request": request},
+        )
+        return self.get_paginated_response(serializer.data)
 
     @action(
         methods=["POST", "DELETE"],
         detail=True,
         permission_classes=[IsAuthenticated],
+        serializer_class=SubscriptionsSerializer,
     )
     def subscribe(self, request, **kwargs):
         """POST Подписаться на пользователя
         DEL  Отписаться от пользователя."""
 
-        subscribed = get_object_or_404(User, id=kwargs["pk"])
+        subscribed = get_object_or_404(User, id=kwargs["id"])
         user = request.user
-        if not user.is_anonymous:
-            if request.method == "POST":
-                # Добавление рецепта в избранное
-                if not Subscription.objects.filter(
-                    user=user,
-                    subscribed=subscribed,
-                ).exists():
-                    Subscription.objects.create(
-                        user=user,
-                        subscribed=subscribed,
-                    )
-                    serializer = RecipeMinifiedSerializer(subscribed)
-                    return Response(
-                        data=serializer.data,
-                        status=status.HTTP_201_CREATED,
-                    )
-                else:
-                    return Response(
-                        {"Автор уже в подписках."},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-            if request.method == "DELETE":
-                # Удаление рецепта из избранного
-                if Subscription.objects.filter(
-                    user=user,
-                    subscribed=subscribed,
-                ).exists():
-                    Subscription.objects.filter(
-                        user=user,
-                        subscribed=subscribed,
-                    ).delete()
-                    return Response(
-                        {"Автор успешно удален из подписок."},
-                        status=status.HTTP_200_OK,
-                    )
-                else:
-                    return Response({"Автор не найден в иподписках"})
-            else:
-                return Response(
-                    {"detail": "Метод не разрешен"},
-                    status=status.HTTP_405_METHOD_NOT_ALLOWED,
-                )
+
+        if request.method == "POST":
+            return self.subscribe_user(user, subscribed)
+        elif request.method == "DELETE":
+            return self.unsubscribe_user(user, subscribed)
         else:
             return Response(
-                {"Учетные данные не были предоставлены."},
-                status=status.HTTP_401_UNAUTHORIZED,
+                {"detail": "Метод не разрешен"},
+                status=status.HTTP_405_METHOD_NOT_ALLOWED,
+            )
+
+    def subscribe_user(self, user, subscribed):
+
+        if not Subscription.objects.filter(
+            user=user,
+            subscribed=subscribed,
+        ).exists():
+            Subscription.objects.create(
+                user=user,
+                subscribed=subscribed,
+            )
+            return Response(
+                {"Подписка успешно создана."},
+                status=status.HTTP_201_CREATED,
+            )
+        else:
+            return Response(
+                {"Автор уже в подписках."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+    def unsubscribe_user(self, user, subscribed):
+
+        if Subscription.objects.filter(
+            user=user,
+            subscribed=subscribed,
+        ).exists():
+            Subscription.objects.filter(
+                user=user,
+                subscribed=subscribed,
+            ).delete()
+            return Response(
+                {"Автор успешно удален из подписок."},
+                status=status.HTTP_200_OK,
+            )
+        else:
+            return Response(
+                {"Автор не найден в иподписках"},
+                status=status.HTTP_404_NOT_FOUND,
             )
 
 
@@ -199,7 +157,7 @@ class IngredientViewSet(ModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     http_method_names = ("get",)
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAuthenticatedOrReadOnly,)
 
 
 class TagViewSet(ModelViewSet):
@@ -209,7 +167,7 @@ class TagViewSet(ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
     http_method_names = ("get",)
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAuthenticatedOrReadOnly,)
 
 
 class RecipeViewSet(ModelViewSet):
@@ -335,6 +293,7 @@ class RecipeViewSet(ModelViewSet):
                         recipe=recipe,
                     )
                     serializer = RecipeMinifiedSerializer(recipe)
+                    # serializer.is_valid(raise_exception=True)
                     return Response(
                         data=serializer.data,
                         status=status.HTTP_201_CREATED,
