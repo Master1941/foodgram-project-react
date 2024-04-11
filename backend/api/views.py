@@ -12,6 +12,7 @@
 
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
+from datetime import date
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
 from rest_framework.response import Response
@@ -21,6 +22,8 @@ from rest_framework.permissions import (
     # AllowAny,
     IsAuthenticatedOrReadOnly,
 )
+from django.http import HttpResponse
+from django.db.models import Sum
 from djoser.permissions import CurrentUserOrAdmin
 from rest_framework.decorators import action
 
@@ -42,7 +45,7 @@ from food.models import (
     Favourites,
     ShoppingList,
     Subscription,
-    # RecipeIngredient,
+    RecipeIngredient,
 )
 
 User = get_user_model()
@@ -196,17 +199,27 @@ class RecipeViewSet(ModelViewSet):
         """Скачать файл со списком покупок. Это может быть TXT/PDF/CSV.
         Важно, чтобы контент файла удовлетворял требованиям задания.
         Доступно только авторизованным пользователям."""
-        # user = request.user
-        # if not user.is_anonymous:
+        user = request.user
 
-        # list_ingredients =  RecipeIngredient.objects.filter(
-        #     recipe__shopping_list__user=request.user
-        # ).values("recipe__name", "recip__mesuremet_unit").annotation(
-        #     amount_sum=Sum("amount")
-        # )
+        list_ingredients = (
+            RecipeIngredient.objects.filter(recipe__shopping_list__user=user)
+            .values(
+                "ingredient__name",
+                "ingredient__measurement_unit",
+            )
+            .annotate(amount_sum=Sum("amount"))
+        )
+        today_cart = date.today()
+        shopping_list = [f"Список продуктов на {today_cart}:\n \n"]
+        for ingredient in list_ingredients:
+            name = ingredient["ingredient__name"]
+            amount = ingredient["amount_sum"]
+            unit = ingredient["ingredient__measurement_unit"]
+            shopping_list.append(f"{name}: {amount} {unit}\n")
+        response = HttpResponse(shopping_list, content_type="text/plain")
+        response["Content-Disposition"] = 'attachment; filename="shopping_list.txt"'
 
-        # serializer = UsersSerializer(user)
-        # return Response(serializer.data, status=status.HTTP_200_OK)
+        return response
 
     @action(
         methods=["POST", "DELETE"],
