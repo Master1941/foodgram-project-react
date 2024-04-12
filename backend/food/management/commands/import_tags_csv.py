@@ -20,6 +20,7 @@ class Command(BaseCommand):
                 for row in reader:
                     try:
                         tags, created = Tag.objects.get_or_create(
+                            id=row["id"],
                             name=row["name"],
                             color=row["color"],
                             slug=row["slug"],

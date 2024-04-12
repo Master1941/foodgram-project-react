@@ -143,8 +143,8 @@ class MeUsersViewSet(UserViewSet):
                 subscribed=subscribed,
             ).delete()
             return Response(
-                {"Автор успешно удален из подписок."},
-                status=status.HTTP_200_OK,
+                {"Успешная отписка"},
+                status=status.HTTP_204_NO_CONTENT,
             )
         else:
             return Response(
@@ -181,6 +181,7 @@ class RecipeViewSet(ModelViewSet):
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
     pagination_class = CustomPageNumberPagination
+    permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get_serializer_class(self):
         """Будет использоваться сериализатор `RecipeGetSerializer`
@@ -200,7 +201,7 @@ class RecipeViewSet(ModelViewSet):
         Важно, чтобы контент файла удовлетворял требованиям задания.
         Доступно только авторизованным пользователям."""
         user = request.user
-
+        username = user.username
         list_ingredients = (
             RecipeIngredient.objects.filter(recipe__shopping_list__user=user)
             .values(
@@ -210,14 +211,18 @@ class RecipeViewSet(ModelViewSet):
             .annotate(amount_sum=Sum("amount"))
         )
         today_cart = date.today()
+        filename = f"{username}_shopping_list_{today_cart}.txt"  # не работает
         shopping_list = [f"Список продуктов на {today_cart}:\n \n"]
         for ingredient in list_ingredients:
             name = ingredient["ingredient__name"]
             amount = ingredient["amount_sum"]
             unit = ingredient["ingredient__measurement_unit"]
             shopping_list.append(f"{name}: {amount} {unit}\n")
-        response = HttpResponse(shopping_list, content_type="text/plain")
-        response["Content-Disposition"] = 'attachment; filename="shopping_list.txt"'
+        response = HttpResponse(
+            shopping_list,
+            content_type="text/plain",
+        )
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
 
         return response
 
