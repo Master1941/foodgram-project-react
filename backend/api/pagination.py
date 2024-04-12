@@ -15,5 +15,5 @@ class CustomPageNumberPagination(PageNumberPagination):
     page_size_query_param = "limit"
 
     # Количество объектов на странице рецептов пользователей подписок
-    page_size = 6
+    # page_size = 6
     # recipes_limit	  # Количество объектов внутри поля recipes.

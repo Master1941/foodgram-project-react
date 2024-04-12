@@ -38,7 +38,7 @@ class Tag(models.Model):
     )
     slug = models.SlugField(
         "Слаг",
-        unique=True,
+  
         max_length=SLAG_LEN,
     )
 
@@ -108,8 +108,8 @@ class Recipe(models.Model):
     image = models.ImageField(
         upload_to="images/",
         verbose_name="Картинка, закодированная в Base64",
-        null=True,
-        default=None,
+        # null=True,
+        # default=None,
     )
     text = models.TextField("Описание")
     ingredients = models.ManyToManyField(
@@ -257,7 +257,7 @@ class Favourites(models.Model):
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        related_name ="favorite"
+        related_name="favorite"
     )
 
     class Meta:

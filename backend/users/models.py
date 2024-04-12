@@ -25,6 +25,12 @@ from food.constants import (
     PASSWORD_MAX_LENGTH,
 )
 
+username_validator = RegexValidator(
+    regex=r"^[\w.@+-]+$",
+    message="Username must contain only letters, numbers, or the characters: .@+-",
+    code="invalid_username",
+)
+
 
 class CustomUser(AbstractUser):
 
@@ -33,12 +39,7 @@ class CustomUser(AbstractUser):
         help_text="Укажите логин",
         unique=True,
         max_length=USERNAME_MAX_LENGTH,
-    #     validators=[
-    #         RegexValidator(
-    #             regex=r"^[а-яёА-ЯЁ]+$",
-    #             message="Поле должно содержать только русские буквы.",
-    #         ),
-    #     ],
+        validators=[username_validator],
     )
     email = models.EmailField(
         "E-mail",
@@ -47,12 +48,10 @@ class CustomUser(AbstractUser):
     )
     first_name = models.CharField(
         "Имя",
-        blank=True,
         max_length=FIRST_NAME_MAX_LENGTH,
     )
     last_name = models.CharField(
         "Фамилия",
-        blank=True,
         max_length=LAST_NAME_MAX_LENGTH,
     )
     password = models.CharField(

@@ -38,7 +38,6 @@ from rest_framework.serializers import (
 )
 
 # from food.constants import FIELD_MIN_AMOUNT
-
 from food.models import (
     Tag,
     Recipe,
