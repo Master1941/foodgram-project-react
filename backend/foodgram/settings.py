@@ -149,8 +149,8 @@ DJOSER = {
         # 'user': ['djoser.permissions.CurrentUserOrAdmin'],
 
         'user': ['rest_framework.permissions.IsAuthenticatedOrReadOnly'],  # <<<
+        'user_list': ['rest_framework.permissions.IsAuthenticatedOrReadOnly'],  # <<
 
-        'user_list': ['djoser.permissions.CurrentUserOrAdmin'],
         'token_create': ['rest_framework.permissions.AllowAny'],
         'token_destroy': ['rest_framework.permissions.IsAuthenticated'],
     },
@@ -161,7 +161,7 @@ REST_FRAMEWORK = {
     #     # МОЖНО ОТКЛЮЧИТЬ АПИ БРАУЗЕРА (НУЖНО В РЕЛИЗЕ)
     # ],
     "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.AllowAny",
+        "rest_framework.permissions.IsAuthenticated",
     ],
     # AllowAny — всё разрешено, любой пользователь (и даже аноним) может выполнить любой запрос.
     # IsAuthenticated — только аутентифицированные пользователи имеют доступ к API и могут выполнить любой запрос. Остальным вернётся ответ "401 Unauthorized".

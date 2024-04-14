@@ -19,7 +19,7 @@ Example: tags=lunch&tags=breakfast
 Показывать рецепты только с указанными тегами (по slug)
 """
 
-from django_filters.rest_framework import FilterSet, filters
+from django_filters import FilterSet, filters
 
 from food.models import Ingredient, Recipe, Tag, Subscription, Favourites
 from django.contrib.auth import get_user_model
@@ -52,3 +52,16 @@ class RecipeFilter(FilterSet):
         if self.request.user.is_authenticated:
             return queryset.filter(favorite__user=self.request.user)
         return queryset
+
+
+class IngredientFilter(FilterSet):
+    """Ищите ингредиенты по полю name регистронезависимо:
+    по вхождению в начало названия,
+    по вхождению в произвольном месте.
+    Сортировка в таком случае должна быть от первых ко вторым."""
+
+    name = filters.CharFilter(method="")
+
+    class Meta:
+        model = Ingredient
+        fields = ("name",)

@@ -36,7 +36,8 @@ from api.serializers import (
     SubscriptionsSerializer,
     RecipeMinifiedSerializer,
 )
-from api.filters import RecipeFilter
+from rest_framework import filters
+from api.filters import RecipeFilter, IngredientFilter
 from api.pagination import CustomPageNumberPagination
 from food.models import (
     Tag,
@@ -161,6 +162,8 @@ class IngredientViewSet(ModelViewSet):
     serializer_class = IngredientSerializer
     http_method_names = ("get",)
     permission_classes = (IsAuthenticatedOrReadOnly,)
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ['name']
 
 
 class TagViewSet(ModelViewSet):
