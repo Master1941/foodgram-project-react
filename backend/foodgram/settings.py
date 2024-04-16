@@ -133,8 +133,9 @@ DJOSER = {
     "SERIALIZERS": {
         "user": "api.serializers.MeUsersSerializer",
         "user_create": "api.serializers.MeUserCreateSerializer",
+        'current_user': "api.serializers.MeUsersSerializer",
     },
-    "PERMISSIONS":{
+    "PERMISSIONS": {
         'activation': ['rest_framework.permissions.AllowAny'],
         'password_reset': ['rest_framework.permissions.AllowAny'],
         'password_reset_confirm': ['rest_framework.permissions.AllowAny'],
@@ -146,9 +147,10 @@ DJOSER = {
         'user_delete': ['djoser.permissions.CurrentUserOrAdmin'],
         # 'user': ['djoser.permissions.CurrentUserOrAdmin'],
 
+        #  Это разрешение позволяет только чтение для анонимных пользователей, а для текущего пользователя или администратора доступна полная работа с ресурсом.
         'user': ['rest_framework.permissions.IsAuthenticatedOrReadOnly'],  # <<<
+        'user_list': ['rest_framework.permissions.IsAuthenticatedOrReadOnly'],  # <<
 
-        'user_list': ['djoser.permissions.CurrentUserOrAdmin'],
         'token_create': ['rest_framework.permissions.AllowAny'],
         'token_destroy': ['rest_framework.permissions.IsAuthenticated'],
     },
@@ -159,7 +161,7 @@ REST_FRAMEWORK = {
     #     # МОЖНО ОТКЛЮЧИТЬ АПИ БРАУЗЕРА (НУЖНО В РЕЛИЗЕ)
     # ],
     "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.AllowAny",
+        "rest_framework.permissions.IsAuthenticated",
     ],
     # AllowAny — всё разрешено, любой пользователь (и даже аноним) может выполнить любой запрос.
     # IsAuthenticated — только аутентифицированные пользователи имеют доступ к API и могут выполнить любой запрос. Остальным вернётся ответ "401 Unauthorized".

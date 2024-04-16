@@ -10,42 +10,38 @@
 могут быть похожи друг на друга. Избегайте дублирующегося кода.
 """
 
-from django.shortcuts import get_object_or_404
-from django.contrib.auth import get_user_model
 from datetime import date
+
+from django.contrib.auth import get_user_model
+from django.db.models import Sum
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import status
+from djoser.views import UserViewSet
+from rest_framework import filters, status
+from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
-from rest_framework.permissions import (
-    IsAuthenticated,
-    # AllowAny,
-    IsAuthenticatedOrReadOnly,
-)
-from django.http import HttpResponse
-from django.db.models import Sum
-from djoser.permissions import CurrentUserOrAdmin
-from rest_framework.decorators import action
 
-from djoser.views import UserViewSet
-from api.serializers import (
-    TagSerializer,
-    IngredientSerializer,
-    RecipeGetSerializer,
-    RecipeCreatSerializer,
-    SubscriptionsSerializer,
-    RecipeMinifiedSerializer,
-)
 from api.filters import RecipeFilter
 from api.pagination import CustomPageNumberPagination
+from api.serializers import (
+    IngredientSerializer,
+    RecipeCreatSerializer,
+    RecipeGetSerializer,
+    RecipeMinifiedSerializer,
+    SubscriptionsSerializer,
+    TagSerializer,
+)
 from food.models import (
-    Tag,
-    Recipe,
-    Ingredient,
     Favourites,
+    Ingredient,
+    Recipe,
+    RecipeIngredient,
     ShoppingList,
     Subscription,
-    RecipeIngredient,
+    Tag,
 )
 
 User = get_user_model()
@@ -67,6 +63,7 @@ class MeUsersViewSet(UserViewSet):
 
     pagination_class = CustomPageNumberPagination
     queryset = User.objects.all()
+    permission_classes = (IsAuthenticated,)
 
     @action(
         methods=["GET"],
@@ -106,11 +103,11 @@ class MeUsersViewSet(UserViewSet):
             return self.subscribe_user(user, subscribed)
         elif request.method == "DELETE":
             return self.unsubscribe_user(user, subscribed)
-        else:
-            return Response(
-                {"detail": "Метод не разрешен"},
-                status=status.HTTP_405_METHOD_NOT_ALLOWED,
-            )
+
+        return Response(
+            {"detail": "Метод не разрешен"},
+            status=status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
 
     def subscribe_user(self, user, subscribed):
 
@@ -126,11 +123,11 @@ class MeUsersViewSet(UserViewSet):
                 {"Подписка успешно создана."},
                 status=status.HTTP_201_CREATED,
             )
-        else:
-            return Response(
-                {"Автор уже в подписках."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+
+        return Response(
+            {"Автор уже в подписках."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     def unsubscribe_user(self, user, subscribed):
 
@@ -146,11 +143,11 @@ class MeUsersViewSet(UserViewSet):
                 {"Успешная отписка"},
                 status=status.HTTP_204_NO_CONTENT,
             )
-        else:
-            return Response(
-                {"Автор не найден в иподписках"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+
+        return Response(
+            {"Автор не найден в иподписках"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
 
 
 class IngredientViewSet(ModelViewSet):
@@ -161,6 +158,8 @@ class IngredientViewSet(ModelViewSet):
     serializer_class = IngredientSerializer
     http_method_names = ("get",)
     permission_classes = (IsAuthenticatedOrReadOnly,)
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ["name"]
 
 
 class TagViewSet(ModelViewSet):
@@ -195,7 +194,11 @@ class RecipeViewSet(ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
-    @action(methods=["GET"], detail=False, permission_classes=[IsAuthenticated])
+    @action(
+        methods=["GET"],
+        detail=False,
+        permission_classes=[IsAuthenticated],
+    )
     def download_shopping_cart(self, request):
         """Скачать файл со списком покупок. Это может быть TXT/PDF/CSV.
         Важно, чтобы контент файла удовлетворял требованиям задания.
@@ -226,6 +229,45 @@ class RecipeViewSet(ModelViewSet):
 
         return response
 
+    def add_a_recipe_to_the_list(self, user, Model, recipe):
+        """Метод для добавления рецепта в список избранного или покупок."""
+
+        if not Model.objects.filter(
+            user=user,
+            recipe=recipe,
+        ).exists():
+            Model.objects.create(
+                user=user,
+                recipe=recipe,
+            )
+            serializer = RecipeMinifiedSerializer(recipe)
+            return Response(
+                data=serializer.data,
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(
+            {"Рецепт уже в корзине"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    def delete_a_recipe_in_the_list(self, user, Model, recipe):
+        """Метод для удаления рецепта из списока избранного или покупок."""
+
+        if Model.objects.filter(
+            user=user,
+            recipe=recipe,
+        ).exists():
+            Model.objects.filter(
+                user=user,
+                recipe=recipe,
+            ).delete()
+            return Response(
+                {"Рецепт успешно удален из избранного"},
+                status=status.HTTP_200_OK,
+            )
+        else:
+            return Response({"Рецепт не найден в избранном"})
+
     @action(
         methods=["POST", "DELETE"],
         detail=True,
@@ -237,53 +279,22 @@ class RecipeViewSet(ModelViewSet):
 
         recipe = get_object_or_404(Recipe, id=kwargs["pk"])
         user = request.user
-        if not user.is_anonymous:
-            if request.method == "POST":
-                # Добавление рецепта в покупки
-                if not ShoppingList.objects.filter(
-                    user=user,
-                    recipe=recipe,
-                ).exists():
-                    ShoppingList.objects.create(
-                        user=user,
-                        recipe=recipe,
-                    )
-                    serializer = RecipeMinifiedSerializer(recipe)
-                    return Response(
-                        data=serializer.data,
-                        status=status.HTTP_201_CREATED,
-                    )
-                else:
-                    return Response(
-                        {"Рецепт уже в корзине"},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-            if request.method == "DELETE":
-                # Удаление рецепта из избранного
-                if ShoppingList.objects.filter(
-                    user=user,
-                    recipe=recipe,
-                ).exists():
-                    ShoppingList.objects.filter(
-                        user=user,
-                        recipe=recipe,
-                    ).delete()
-                    return Response(
-                        {"Рецепт успешно удален из избранного"},
-                        status=status.HTTP_200_OK,
-                    )
-                else:
-                    return Response({"Рецепт не найден в избранном"})
-            else:
-                return Response(
-                    {"detail": "Метод не разрешен"},
-                    status=status.HTTP_405_METHOD_NOT_ALLOWED,
-                )
-        else:
-            return Response(
-                {"Учетные данные не были предоставлены."},
-                status=status.HTTP_401_UNAUTHORIZED,
+        if request.method == "POST":
+            return self.add_a_recipe_to_the_list(
+                recipe=recipe,
+                user=user,
+                Model=ShoppingList,
             )
+        elif request.method == "DELETE":
+            return self.delete_a_recipe_in_the_list(
+                recipe=recipe,
+                user=user,
+                Model=ShoppingList,
+            )
+        return Response(
+            {"detail": "Метод не разрешен"},
+            status=status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
 
     @action(
         methods=[
@@ -299,51 +310,19 @@ class RecipeViewSet(ModelViewSet):
 
         recipe = get_object_or_404(Recipe, id=kwargs["pk"])
         user = request.user
-        if not user.is_anonymous:
-            if request.method == "POST":
-                # Добавление рецепта в избранное
-                if not Favourites.objects.filter(
-                    user=user,
-                    recipe=recipe,
-                ).exists():
-                    Favourites.objects.create(
-                        user=user,
-                        recipe=recipe,
-                    )
-                    serializer = RecipeMinifiedSerializer(recipe)
-                    # serializer.is_valid(raise_exception=True)
-                    return Response(
-                        data=serializer.data,
-                        status=status.HTTP_201_CREATED,
-                    )
-                else:
-                    return Response(
-                        {"Рецепт уже в избранном"},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-            if request.method == "DELETE":
-                # Удаление рецепта из избранного
-                if Favourites.objects.filter(
-                    user=user,
-                    recipe=recipe,
-                ).exists():
-                    Favourites.objects.filter(
-                        user=user,
-                        recipe=recipe,
-                    ).delete()
-                    return Response(
-                        {"Рецепт успешно удален из избранного"},
-                        status=status.HTTP_200_OK,
-                    )
-                else:
-                    return Response({"Рецепт не найден в избранном"})
-            else:
-                return Response(
-                    {"detail": "Метод не разрешен"},
-                    status=status.HTTP_405_METHOD_NOT_ALLOWED,
-                )
-        else:
-            return Response(
-                {"Учетные данные не были предоставлены."},
-                status=status.HTTP_401_UNAUTHORIZED,
+        if request.method == "POST":
+            return self.add_a_recipe_to_the_list(
+                recipe=recipe,
+                user=user,
+                Model=Favourites,
             )
+        elif request.method == "DELETE":
+            return self.delete_a_recipe_in_the_list(
+                recipe=recipe,
+                user=user,
+                Model=Favourites,
+            )
+        return Response(
+            {"detail": "Метод не разрешен"},
+            status=status.HTTP_405_METHOD_NOT_ALLOWED,
+        )

@@ -19,10 +19,10 @@ Example: tags=lunch&tags=breakfast
 Показывать рецепты только с указанными тегами (по slug)
 """
 
-from django_filters.rest_framework import FilterSet, filters
-
-from food.models import Ingredient, Recipe, Tag, Subscription, Favourites
 from django.contrib.auth import get_user_model
+from django_filters import FilterSet, filters
+
+from food.models import Ingredient, Recipe, Tag
 
 User = get_user_model()
 
@@ -35,9 +35,11 @@ class RecipeFilter(FilterSet):
         to_field_name="slug",
         queryset=Tag.objects.all(),
     )
-
+    is_in_shopping_cart = filters.BooleanFilter(
+        method="filter_is_in_shopping_cart",
+    )
     is_favorited = filters.BooleanFilter(
-        method="get_is_favorited",
+        method="filter_is_favorited",
     )
 
     class Meta:
@@ -46,9 +48,28 @@ class RecipeFilter(FilterSet):
             "author",
             "tags",
             "is_favorited",
+            "is_in_shopping_cart",
         )
 
-    def get_is_favorited(self, queryset, ыва, ываe):
+    def filter_shopping_cart(self, queryset, name, value):
+        if self.request.user.is_authenticated:
+            return queryset.filter(sh_cart__user=self.request.user)
+        return queryset
+
+    def filter_is_favorited(self, queryset, name, value):
         if self.request.user.is_authenticated:
             return queryset.filter(favorite__user=self.request.user)
         return queryset
+
+
+class IngredientFilter(FilterSet):
+    """Ищите ингредиенты по полю name регистронезависимо:
+    по вхождению в начало названия,
+    по вхождению в произвольном месте.
+    Сортировка в таком случае должна быть от первых ко вторым."""
+
+    name = filters.CharFilter(method="")
+
+    class Meta:
+        model = Ingredient
+        fields = ("name",)
