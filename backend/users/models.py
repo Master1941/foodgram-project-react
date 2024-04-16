@@ -1,6 +1,6 @@
 """Обязательные поля для пользователя:
 
-логин, (string <= 150 characters ^[\w.@+-]+\z)
+логин, (string <= 150 characters
 пароль,
 email,
 имя,
@@ -17,17 +17,14 @@ from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator
 from django.db import models
 
-from food.constants import (
-    EMAIL_MAX_LENGTH,
-    USERNAME_MAX_LENGTH,
-    FIRST_NAME_MAX_LENGTH,
-    LAST_NAME_MAX_LENGTH,
-    PASSWORD_MAX_LENGTH,
-)
+from food.constants import (EMAIL_MAX_LENGTH, FIRST_NAME_MAX_LENGTH,
+                            LAST_NAME_MAX_LENGTH, PASSWORD_MAX_LENGTH,
+                            USERNAME_MAX_LENGTH)
 
 username_validator = RegexValidator(
     regex=r"^[\w.@+-]+$",
-    message="Username must contain only letters, numbers, or the characters: .@+-",
+    message="""Имя пользователя должно содержать только буквы,
+        цифры или символы: .@+-""",
     code="invalid_username",
 )
 
