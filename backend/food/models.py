@@ -1,19 +1,10 @@
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-
-from food.constants import (
-    NAME_MAX_LENGTH,
-    UNIT_MAX_LENGTH,
-    COLOR_CODE_MAX_LENGTH,
-    FIELD_MIN_AMOUNT,
-    FIELD_MAX_AMOUNT,
-    SLAG_LEN,
-    FIELD_MIN_TIME,
-    FIELD_MAX_TIME,
-)
-
+from food.constants import (COLOR_CODE_MAX_LENGTH, FIELD_MAX_AMOUNT,
+                            FIELD_MAX_TIME, FIELD_MIN_AMOUNT, FIELD_MIN_TIME,
+                            NAME_MAX_LENGTH, SLAG_LEN, UNIT_MAX_LENGTH)
 
 User = get_user_model()
 
@@ -38,12 +29,10 @@ class Tag(models.Model):
     )
     slug = models.SlugField(
         "Слаг",
-  
         max_length=SLAG_LEN,
     )
 
     class Meta:
-
         ordering = ("name",)
         verbose_name = "Тег"
         verbose_name_plural = "Теги"
@@ -167,11 +156,15 @@ class RecipeIngredient(models.Model):
         validators=[
             MinValueValidator(
                 FIELD_MIN_AMOUNT,
-                message=(f"Ингредиентов должна быть не меньше {FIELD_MIN_AMOUNT}."),
+                message=(
+                    f"Ингредиентов должна быть не меньше {FIELD_MIN_AMOUNT}."
+                ),
             ),
             MaxValueValidator(
                 FIELD_MAX_AMOUNT,
-                message=(f"Ингредиентов должна быть не более {FIELD_MAX_AMOUNT}."),
+                message=(
+                    f"Ингредиентов должна быть не более {FIELD_MAX_AMOUNT}."
+                ),
             ),
         ],
     )
@@ -195,7 +188,6 @@ class ShoppingList(models.Model):
     )
 
     class Meta:
-
         ordering = ("recipe",)
         verbose_name = "Покупка"
         verbose_name_plural = "Покупки"
@@ -214,7 +206,6 @@ class ShoppingList(models.Model):
 class Subscription(models.Model):
     """ПОДПИСКИ"""
 
-    # похожее былдо в api_final_yatube
     user = models.ForeignKey(
         User,
         related_name="user",
@@ -257,11 +248,10 @@ class Favourites(models.Model):
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        related_name="favorite"
+        related_name="favorite",
     )
 
     class Meta:
-        # default_related_name = "favorite"
         verbose_name = "Избранный рецепт"
         verbose_name_plural = "Избранные рецепты"
 

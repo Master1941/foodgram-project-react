@@ -9,44 +9,28 @@
 Некоторые методы, в том числе и action,
 могут быть похожи друг на друга. Избегайте дублирующегося кода.
 """
-
-from django.shortcuts import get_object_or_404
-from django.contrib.auth import get_user_model
 from datetime import date
+
+from django.contrib.auth import get_user_model
+from django.db.models import Sum
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import status
+from djoser.views import UserViewSet
+from rest_framework import filters, status
+from rest_framework.decorators import action
+from rest_framework.permissions import (IsAuthenticated,
+                                        IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
-from rest_framework.permissions import (
-    IsAuthenticated,
-    # AllowAny,
-    IsAuthenticatedOrReadOnly,
-)
-from django.http import HttpResponse
-from django.db.models import Sum
-from djoser.permissions import CurrentUserOrAdmin
-from rest_framework.decorators import action
 
-from djoser.views import UserViewSet
-from api.serializers import (
-    TagSerializer,
-    IngredientSerializer,
-    RecipeGetSerializer,
-    RecipeCreatSerializer,
-    SubscriptionsSerializer,
-    RecipeMinifiedSerializer,
-)
 from api.filters import RecipeFilter
 from api.pagination import CustomPageNumberPagination
-from food.models import (
-    Tag,
-    Recipe,
-    Ingredient,
-    Favourites,
-    ShoppingList,
-    Subscription,
-    RecipeIngredient,
-)
+from api.serializers import (IngredientSerializer, RecipeCreatSerializer,
+                             RecipeGetSerializer, RecipeMinifiedSerializer,
+                             SubscriptionsSerializer, TagSerializer)
+from food.models import (Favourites, Ingredient, Recipe, RecipeIngredient,
+                         ShoppingList, Subscription, Tag)
 
 User = get_user_model()
 
@@ -161,6 +145,8 @@ class IngredientViewSet(ModelViewSet):
     serializer_class = IngredientSerializer
     http_method_names = ("get",)
     permission_classes = (IsAuthenticatedOrReadOnly,)
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ["name"]
 
 
 class TagViewSet(ModelViewSet):
@@ -195,7 +181,11 @@ class RecipeViewSet(ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
-    @action(methods=["GET"], detail=False, permission_classes=[IsAuthenticated])
+    @action(
+        methods=["GET"],
+        detail=False,
+        permission_classes=[IsAuthenticated],
+    )
     def download_shopping_cart(self, request):
         """Скачать файл со списком покупок. Это может быть TXT/PDF/CSV.
         Важно, чтобы контент файла удовлетворял требованиям задания.
@@ -311,7 +301,6 @@ class RecipeViewSet(ModelViewSet):
                         recipe=recipe,
                     )
                     serializer = RecipeMinifiedSerializer(recipe)
-                    # serializer.is_valid(raise_exception=True)
                     return Response(
                         data=serializer.data,
                         status=status.HTTP_201_CREATED,
