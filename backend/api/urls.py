@@ -1,7 +1,6 @@
 """
 Проект состоит из следующих страниц:
 
-
 главная,
 страница рецепта,
 страница пользователя,
@@ -40,20 +39,12 @@ http://localhost/api/recipes/{id}/favorite/
 http://localhost/api/ingredients/
 http://localhost/api/ingredients/{id}/
 """
-
-from django.urls import path, include
+from api.views import (IngredientViewSet, MeUsersViewSet, RecipeViewSet,
+                       TagViewSet)
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
-from djoser.views import UserViewSet
-
-from api.views import (
-    TagViewSet,
-    RecipeViewSet,
-    IngredientViewSet,
-    MeUsersViewSet,
-)
 
 app_name = "api"
-
 
 router_v1 = DefaultRouter()
 router_v1.register("users", MeUsersViewSet, basename="users")

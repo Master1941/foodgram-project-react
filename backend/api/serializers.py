@@ -15,38 +15,21 @@
 Используйте подходящие типы related-полей;
 для некоторых данных вам потребуется использовать SerializerMethodField.
 """
-
 import base64
+
 from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
-
-# from django.core.validators import MinValueValidator
-from django.shortcuts import get_object_or_404
 from django.db import transaction
+from django.shortcuts import get_object_or_404
 from djoser.serializers import UserCreateSerializer, UserSerializer
-from rest_framework.validators import UniqueTogetherValidator
-from rest_framework.serializers import (
-    ModelSerializer,
-    ImageField,
-    ReadOnlyField,
-    PrimaryKeyRelatedField,
-    # ValidationError,
-    # CharField,
-    IntegerField,
-    # CurrentUserDefault,
-    SerializerMethodField,  # для создания дополнительных полей
-)
 
 # from food.constants import FIELD_MIN_AMOUNT
-from food.models import (
-    Tag,
-    Recipe,
-    Ingredient,
-    Favourites,
-    ShoppingList,
-    RecipeIngredient,
-    Subscription,
-)
+from food.models import (Favourites, Ingredient, Recipe, RecipeIngredient,
+                         ShoppingList, Subscription, Tag)
+from rest_framework.serializers import (ImageField, IntegerField,
+                                        ModelSerializer,
+                                        PrimaryKeyRelatedField, ReadOnlyField,
+                                        SerializerMethodField)
 
 User = get_user_model()
 
@@ -144,10 +127,11 @@ class SubscriptionsSerializer(MeUsersSerializer):
 
     def get_recipes_count(self, obj):
         """Общее количество рецептов пользователя"""
+
         # Получать подписки текущего пользователя
         subscriptions = Subscription.objects.filter(user=obj)
 
-        # Получить список пользователей, на которых подписан текущий пользователь
+        # Получить список пользователей, на которых подписан пользователь
         subscribed_users = subscriptions.values_list("subscribed", flat=True)
 
         # Подсчитывайте рецепты, созданные подписанными пользователями
@@ -292,11 +276,7 @@ class RecipeCreatSerializer(ModelSerializer):
         model = Recipe
         fields = (
             "ingredients",
-            # id": 1123,
-            # "amount": 10
             "tags",
-            # 1,
-            # 2
             "image",
             "name",
             "text",

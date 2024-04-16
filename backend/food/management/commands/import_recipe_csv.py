@@ -1,7 +1,9 @@
+import csv
+
 from django.core.management.base import BaseCommand, CommandError
 from django.db import IntegrityError
 from food.models import Recipe
-import csv
+
 # import os
 # from foodgram import settings
 
@@ -28,15 +30,22 @@ class Command(BaseCommand):
                         )
                         if created:
                             self.stdout.write(
-                                self.style.SUCCESS(f'recipe "{recipe.name}" создан')
+                                self.style.SUCCESS(
+                                    f'recipe "{recipe.name}" создан'
+                                )
                             )
                         else:
                             self.stdout.write(
-                                self.style.WARNING(f'recipe "{recipe.name}" уже существуют')
+                                self.style.WARNING(
+                                    f'recipe "{recipe.name}" уже существуют'
+                                )
                             )
                     except IntegrityError:
                         self.stdout.write(
-                            self.style.ERROR(f'recipe "{row["name"]}" не удалось добавить, так как он уже существует')
+                            self.style.ERROR(
+                                f'''recipe "{row["name"]}" не удалось
+                                    добавить, так как он уже существует'''
+                            )
                         )
 
         except Exception as e:
