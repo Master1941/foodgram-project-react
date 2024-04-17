@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+
 from food.constants import (COLOR_CODE_MAX_LENGTH, FIELD_MAX_AMOUNT,
                             FIELD_MAX_TIME, FIELD_MIN_AMOUNT, FIELD_MIN_TIME,
                             NAME_MAX_LENGTH, SLAG_LEN, UNIT_MAX_LENGTH)
@@ -65,6 +66,12 @@ class Ingredient(models.Model):
         ordering = ("name",)
         verbose_name = "Ингредиент"
         verbose_name_plural = "Ингредиенты"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["name", "measurement_unit"],
+                name="unique_name_measurement_unit",
+            )
+        ]
 
     def __str__(self):
         return f"{self.name}"
@@ -97,8 +104,6 @@ class Recipe(models.Model):
     image = models.ImageField(
         upload_to="images/",
         verbose_name="Картинка, закодированная в Base64",
-        # null=True,
-        # default=None,
     )
     text = models.TextField("Описание")
     ingredients = models.ManyToManyField(
@@ -168,6 +173,14 @@ class RecipeIngredient(models.Model):
             ),
         ],
     )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["ingredient", "recipe"],
+                name="unique_ingredient_recipe",
+            )
+        ]
 
     def __str__(self):
         return f"{self.ingredient}{self.amount} "

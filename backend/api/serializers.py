@@ -15,6 +15,7 @@
 Используйте подходящие типы related-полей;
 для некоторых данных вам потребуется использовать SerializerMethodField.
 """
+
 import base64
 
 from django.contrib.auth import get_user_model
@@ -22,14 +23,14 @@ from django.core.files.base import ContentFile
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from djoser.serializers import UserCreateSerializer, UserSerializer
+from rest_framework.serializers import (ImageField, IntegerField,
+                                        ModelSerializer,
+                                        PrimaryKeyRelatedField, ReadOnlyField,
+                                        SerializerMethodField, ValidationError)
 
 # from food.constants import FIELD_MIN_AMOUNT
 from food.models import (Favourites, Ingredient, Recipe, RecipeIngredient,
                          ShoppingList, Subscription, Tag)
-from rest_framework.serializers import (ImageField, IntegerField,
-                                        ModelSerializer,
-                                        PrimaryKeyRelatedField, ReadOnlyField,
-                                        SerializerMethodField)
 
 User = get_user_model()
 
@@ -136,6 +137,14 @@ class SubscriptionsSerializer(MeUsersSerializer):
 
         # Подсчитывайте рецепты, созданные подписанными пользователями
         return Recipe.objects.filter(author__in=subscribed_users).count()
+
+    # def validate_following(self, value):
+    #     """
+    #     Запрет подписки на самого себя.
+    #     """
+    #     if value == self.context["request"].user:
+    #         raise ValidationError("Нельзя подписаться на самого себя!")
+    #     return value
 
 
 #
@@ -292,20 +301,20 @@ class RecipeCreatSerializer(ModelSerializer):
 
     # def validate(self, data):
     #     """Проверка на соответствие тегов и ингредиентов"""
-    #     ingredients = data.get(""recipe_ingredient"")
+    #     ingredients = data.get("recipe_ingredient")
     #     tags = data.get("tags")
 
     #     if not ingredients and not tags:
     #         raise ValidationError(
     #             "Необходимо указать хотя бы один ингредиент или тег"
     #         )
-    #     base_ingredient = ingredient.id  # .get("id")
-    # if RecipeIngredient.objects.filter(
-    #     recipe=recipe, ingredient=base_ingredient
-    # ).exists():
-    #     raise ValidationError(
-    #         {"errors": "нельзя добавить одинаковые ингредиенты"}
-    #     )
+    #     base_ingredient = ingredients.id  # .get("id")
+    #     if RecipeIngredient.objects.filter(
+    #         recipe=recipe, ingredient=base_ingredient
+    #     ).exists():
+    #         raise ValidationError(
+    #             {"errors": "нельзя добавить одинаковые ингредиенты"}
+    #         )
 
     @transaction.atomic
     def create(self, validated_data):

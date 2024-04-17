@@ -135,6 +135,7 @@ DJOSER = {
     "SERIALIZERS": {
         "user": "api.serializers.MeUsersSerializer",
         "user_create": "api.serializers.MeUserCreateSerializer",
+        'current_user': "api.serializers.MeUsersSerializer",
     },
     "PERMISSIONS": {
         'activation': ['rest_framework.permissions.AllowAny'],
@@ -148,7 +149,8 @@ DJOSER = {
         'user_delete': ['djoser.permissions.CurrentUserOrAdmin'],
         # 'user': ['djoser.permissions.CurrentUserOrAdmin'],
 
-        'user': ['rest_framework.permissions.IsAuthenticatedOrReadOnly'],  # <<<
+        #  Это разрешение позволяет только чтение для анонимных пользователей, а для текущего пользователя или администратора доступна полная работа с ресурсом.
+        'user': ['djoser.permissions.CurrentUserOrAdminOrReadOnly'],  # <<<
         'user_list': ['rest_framework.permissions.IsAuthenticatedOrReadOnly'],  # <<
 
         'token_create': ['rest_framework.permissions.AllowAny'],

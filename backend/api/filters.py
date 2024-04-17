@@ -20,6 +20,7 @@ Example: tags=lunch&tags=breakfast
 """
 from django.contrib.auth import get_user_model
 from django_filters import FilterSet, filters
+
 from food.models import Ingredient, Recipe, Tag
 
 User = get_user_model()
