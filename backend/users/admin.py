@@ -85,7 +85,6 @@ class RecipeAdmin(admin.ModelAdmin):
     inlines = (RecipeInLine,)
 
 
-
 @admin.register(Ingredient)
 class IngredientAdmin(admin.ModelAdmin):
     list_display = (
