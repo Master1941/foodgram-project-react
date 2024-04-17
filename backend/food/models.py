@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+
 from food.constants import (COLOR_CODE_MAX_LENGTH, FIELD_MAX_AMOUNT,
                             FIELD_MAX_TIME, FIELD_MIN_AMOUNT, FIELD_MIN_TIME,
                             NAME_MAX_LENGTH, SLAG_LEN, UNIT_MAX_LENGTH)

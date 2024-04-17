@@ -30,15 +30,9 @@ list_filter — кортеж с полями, по которым можно ф�
 """
 
 from django.contrib import admin
-from food.models import (
-    Favourites,
-    Ingredient,
-    Recipe,
-    RecipeIngredient,
-    ShoppingList,
-    Subscription,
-    Tag,
-)
+
+from food.models import (Favourites, Ingredient, Recipe, RecipeIngredient,
+                         ShoppingList, Subscription, Tag)
 from users.models import CustomUser
 
 admin.site.empty_value_display = "Не задано"

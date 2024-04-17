@@ -39,10 +39,11 @@ http://localhost/api/recipes/{id}/favorite/
 http://localhost/api/ingredients/
 http://localhost/api/ingredients/{id}/
 """
-from api.views import (IngredientViewSet, MeUsersViewSet, RecipeViewSet,
-                       TagViewSet)
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
+
+from api.views import (IngredientViewSet, MeUsersViewSet, RecipeViewSet,
+                       TagViewSet)
 
 app_name = "api"
 

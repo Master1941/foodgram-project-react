@@ -22,14 +22,13 @@ from django.core.files.base import ContentFile
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from djoser.serializers import UserCreateSerializer, UserSerializer
-
-# from food.constants import FIELD_MIN_AMOUNT
-from food.models import (Favourites, Ingredient, Recipe, RecipeIngredient,
-                         ShoppingList, Subscription, Tag)
 from rest_framework.serializers import (ImageField, IntegerField,
                                         ModelSerializer,
                                         PrimaryKeyRelatedField, ReadOnlyField,
                                         SerializerMethodField)
+
+from food.models import (Favourites, Ingredient, Recipe, RecipeIngredient,
+                         ShoppingList, Subscription, Tag)
 
 User = get_user_model()
 
