@@ -17,7 +17,7 @@ services:
       - ./.env
 
   backend:
-    image: master1941/kittygram_backend
+    image: master4141/foodgram_backend
     
     env_file:
       - ./.env
@@ -31,7 +31,7 @@ services:
 
 
   frontend:
-    image: master1941/kittygram_frontend
+    image: master4141/foodgram_frontend
 
     container_name: foodgram_frontend
     command: cp -r /app/build/. /frontend_static/
@@ -40,7 +40,7 @@ services:
       - docs_Prod:/app/docs/
 
   nginx:
-    image: master1941/kittygram_gateway
+    image: master4141/foodgram_gateway
 
     container_name: foodgram_gateway
     ports:
