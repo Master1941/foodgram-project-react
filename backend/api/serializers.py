@@ -28,10 +28,6 @@ from rest_framework.serializers import (ImageField, IntegerField,
                                         PrimaryKeyRelatedField, ReadOnlyField,
                                         SerializerMethodField, ValidationError)
 
-# from food.constants import FIELD_MIN_AMOUNT
-from food.models import (Favourites, Ingredient, Recipe, RecipeIngredient,
-                         ShoppingList, Subscription, Tag)
-
 from food.models import (Favourites, Ingredient, Recipe, RecipeIngredient,
                          ShoppingList, Subscription, Tag)
 
