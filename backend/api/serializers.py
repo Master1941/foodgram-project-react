@@ -131,20 +131,18 @@ class SubscriptionsSerializer(MeUsersSerializer):
 
         # Получать подписки текущего пользователя
         subscriptions = Subscription.objects.filter(user=obj)
-
         # Получить список пользователей, на которых подписан пользователь
         subscribed_users = subscriptions.values_list("subscribed", flat=True)
-
         # Подсчитывайте рецепты, созданные подписанными пользователями
         return Recipe.objects.filter(author__in=subscribed_users).count()
 
-    # def validate_following(self, value):
-    #     """
-    #     Запрет подписки на самого себя.
-    #     """
-    #     if value == self.context["request"].user:
-    #         raise ValidationError("Нельзя подписаться на самого себя!")
-    #     return value
+    def validate_following(self, value):
+        """
+        Запрет подписки на самого себя.
+        """
+        if value == self.context["request"].user:
+            raise ValidationError("Нельзя подписаться на самого себя!")
+        return value
 
 
 #
@@ -273,7 +271,6 @@ class RecipeCreatSerializer(ModelSerializer):
     ingredients = IngredientCreatRecipeSerializize(
         many=True,
         source="recipe_ingredient",
-        # write_only=True,
     )
     image = Base64ImageField()
     tags = PrimaryKeyRelatedField(
@@ -329,13 +326,13 @@ class RecipeCreatSerializer(ModelSerializer):
 
         for ingredient in ingredients_data:
             amount = ingredient["amount"]
-            ingredient_data = get_object_or_404(
+            ingredient = get_object_or_404(
                 Ingredient,
                 pk=ingredient["id"],
             )
             RecipeIngredient.objects.create(
                 recipe=recipe,
-                ingredient=ingredient_data,
+                ingredient=ingredient,
                 amount=amount,
             )
         return recipe
