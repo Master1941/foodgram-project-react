@@ -79,10 +79,10 @@ PROD_DATABASES = {
     }
 }
 
-if os.getenv("TEST_DATABASES") == "True":
-    print("  <SQLite> " * 10)
-else:
-    print(" <PostgreSQL> " * 10)
+# if os.getenv("TEST_DATABASES") == "True":
+#     print("  <SQLite> " * 10)
+# else:
+#     print(" <PostgreSQL> " * 10)
 
 DATABASES = (
     TEST_DATABASES
@@ -135,6 +135,7 @@ DJOSER = {
     "SERIALIZERS": {
         "user": "api.serializers.MeUsersSerializer",
         "user_create": "api.serializers.MeUserCreateSerializer",
+        'current_user': "api.serializers.MeUsersSerializer",
     },
     "PERMISSIONS": {
         'activation': ['rest_framework.permissions.AllowAny'],
@@ -148,6 +149,7 @@ DJOSER = {
         'user_delete': ['djoser.permissions.CurrentUserOrAdmin'],
         # 'user': ['djoser.permissions.CurrentUserOrAdmin'],
 
+        #  Это разрешение позволяет только чтение для анонимных пользователей, а для текущего пользователя или администратора доступна полная работа с ресурсом.
         'user': ['rest_framework.permissions.IsAuthenticatedOrReadOnly'],  # <<<
         'user_list': ['rest_framework.permissions.IsAuthenticatedOrReadOnly'],  # <<
 

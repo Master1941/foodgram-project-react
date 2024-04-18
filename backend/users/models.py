@@ -23,8 +23,8 @@ from food.constants import (EMAIL_MAX_LENGTH, FIRST_NAME_MAX_LENGTH,
 
 username_validator = RegexValidator(
     regex=r"^[\w.@+-]+$",
-    message="""Username must contain only letters,
-      numbers, or the characters: .@+-""",
+    message="""Имя пользователя должно содержать только буквы,
+        цифры или символы: .@+-""",
     code="invalid_username",
 )
 

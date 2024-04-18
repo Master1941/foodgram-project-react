@@ -15,6 +15,7 @@
 Используйте подходящие типы related-полей;
 для некоторых данных вам потребуется использовать SerializerMethodField.
 """
+
 import base64
 
 from django.contrib.auth import get_user_model
@@ -25,7 +26,11 @@ from djoser.serializers import UserCreateSerializer, UserSerializer
 from rest_framework.serializers import (ImageField, IntegerField,
                                         ModelSerializer,
                                         PrimaryKeyRelatedField, ReadOnlyField,
-                                        SerializerMethodField)
+                                        SerializerMethodField, ValidationError)
+
+# from food.constants import FIELD_MIN_AMOUNT
+from food.models import (Favourites, Ingredient, Recipe, RecipeIngredient,
+                         ShoppingList, Subscription, Tag)
 
 from food.models import (Favourites, Ingredient, Recipe, RecipeIngredient,
                          ShoppingList, Subscription, Tag)
@@ -129,12 +134,18 @@ class SubscriptionsSerializer(MeUsersSerializer):
 
         # Получать подписки текущего пользователя
         subscriptions = Subscription.objects.filter(user=obj)
-
         # Получить список пользователей, на которых подписан пользователь
         subscribed_users = subscriptions.values_list("subscribed", flat=True)
-
         # Подсчитывайте рецепты, созданные подписанными пользователями
         return Recipe.objects.filter(author__in=subscribed_users).count()
+
+    def validate_following(self, value):
+        """
+        Запрет подписки на самого себя.
+        """
+        if value == self.context["request"].user:
+            raise ValidationError("Нельзя подписаться на самого себя!")
+        return value
 
 
 #
@@ -263,7 +274,6 @@ class RecipeCreatSerializer(ModelSerializer):
     ingredients = IngredientCreatRecipeSerializize(
         many=True,
         source="recipe_ingredient",
-        # write_only=True,
     )
     image = Base64ImageField()
     tags = PrimaryKeyRelatedField(
@@ -291,20 +301,20 @@ class RecipeCreatSerializer(ModelSerializer):
 
     # def validate(self, data):
     #     """Проверка на соответствие тегов и ингредиентов"""
-    #     ingredients = data.get(""recipe_ingredient"")
+    #     ingredients = data.get("recipe_ingredient")
     #     tags = data.get("tags")
 
     #     if not ingredients and not tags:
     #         raise ValidationError(
     #             "Необходимо указать хотя бы один ингредиент или тег"
     #         )
-    #     base_ingredient = ingredient.id  # .get("id")
-    # if RecipeIngredient.objects.filter(
-    #     recipe=recipe, ingredient=base_ingredient
-    # ).exists():
-    #     raise ValidationError(
-    #         {"errors": "нельзя добавить одинаковые ингредиенты"}
-    #     )
+    #     base_ingredient = ingredients.id  # .get("id")
+    #     if RecipeIngredient.objects.filter(
+    #         recipe=recipe, ingredient=base_ingredient
+    #     ).exists():
+    #         raise ValidationError(
+    #             {"errors": "нельзя добавить одинаковые ингредиенты"}
+    #         )
 
     @transaction.atomic
     def create(self, validated_data):
@@ -319,13 +329,13 @@ class RecipeCreatSerializer(ModelSerializer):
 
         for ingredient in ingredients_data:
             amount = ingredient["amount"]
-            ingredient_data = get_object_or_404(
+            ingredient = get_object_or_404(
                 Ingredient,
                 pk=ingredient["id"],
             )
             RecipeIngredient.objects.create(
                 recipe=recipe,
-                ingredient=ingredient_data,
+                ingredient=ingredient,
                 amount=amount,
             )
         return recipe
