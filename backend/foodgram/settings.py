@@ -79,10 +79,10 @@ PROD_DATABASES = {
     }
 }
 
-# if os.getenv("TEST_DATABASES") == "True":
-#     print("  <SQLite> " * 10)
-# else:
-#     print(" <PostgreSQL> " * 10)
+if os.getenv("TEST_DATABASES") == "True":
+    print("  <SQLite> " * 10)
+else:
+    print(" <PostgreSQL> " * 10)
 
 DATABASES = (
     TEST_DATABASES
