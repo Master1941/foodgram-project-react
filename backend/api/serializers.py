@@ -23,13 +23,26 @@ from django.core.files.base import ContentFile
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from djoser.serializers import UserCreateSerializer, UserSerializer
-from rest_framework.serializers import (ImageField, IntegerField,
-                                        ModelSerializer,
-                                        PrimaryKeyRelatedField, ReadOnlyField,
-                                        SerializerMethodField, ValidationError)
+from rest_framework.serializers import (
+    ImageField,
+    IntegerField,
+    ModelSerializer,
+    PrimaryKeyRelatedField,
+    ReadOnlyField,
+    SerializerMethodField,
+    ValidationError,
+)
 
-from food.models import (Favourites, Ingredient, Recipe, RecipeIngredient,
-                         ShoppingList, Subscription, Tag)
+from food.models import (
+    Favourites,
+    Ingredient,
+    Recipe,
+    RecipeIngredient,
+    ShoppingList,
+    Subscription,
+    Tag,
+)
+from fields import Base64ImageField
 
 User = get_user_model()
 
@@ -142,24 +155,6 @@ class SubscriptionsSerializer(MeUsersSerializer):
         if value == self.context["request"].user:
             raise ValidationError("Нельзя подписаться на самого себя!")
         return value
-
-
-#
-#
-#
-
-
-class Base64ImageField(ImageField):
-    """Кодирует картинку в строку base64."""
-
-    def to_internal_value(self, data):
-        if isinstance(data, str) and data.startswith("data:image"):
-            forma1t, imgstr = data.split(";base64,")
-            ext = forma1t.split("/")[-1]
-
-            data = ContentFile(base64.b64decode(imgstr), name="temp." + ext)
-
-        return super().to_internal_value(data)
 
 
 class TagSerializer(ModelSerializer):
@@ -314,7 +309,6 @@ class RecipeCreatSerializer(ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
-        """Спринт 10/17 → Тема 1/3: Django Rest Framework → Урок 9/15"""
 
         ingredients_data = validated_data.pop("recipe_ingredient")
         tags_data = validated_data.pop("tags")
