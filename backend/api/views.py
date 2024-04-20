@@ -18,31 +18,20 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
-from rest_framework import filters, status
+from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework.permissions import (IsAuthenticated,
+                                        IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
-from api.filters import RecipeFilter, IngredientFilter
+from api.filters import IngredientFilter, RecipeFilter
 from api.pagination import CustomPageNumberPagination
-from api.serializers import (
-    IngredientSerializer,
-    RecipeCreatSerializer,
-    RecipeGetSerializer,
-    RecipeMinifiedSerializer,
-    SubscriptionsSerializer,
-    TagSerializer,
-)
-from food.models import (
-    Favourites,
-    Ingredient,
-    Recipe,
-    RecipeIngredient,
-    ShoppingList,
-    Subscription,
-    Tag,
-)
+from api.serializers import (IngredientSerializer, RecipeCreatSerializer,
+                             RecipeGetSerializer, RecipeMinifiedSerializer,
+                             SubscriptionsSerializer, TagSerializer)
+from food.models import (Favourites, Ingredient, Recipe, RecipeIngredient,
+                         ShoppingList, Subscription, Tag)
 
 User = get_user_model()
 
@@ -150,9 +139,6 @@ class MeUsersViewSet(UserViewSet):
         )
 
 
-from django_filters.rest_framework import DjangoFilterBackend
-
-
 class IngredientViewSet(ModelViewSet):
     """GET Список ингредиентов
     GET Получение ингредиента"""
@@ -161,11 +147,10 @@ class IngredientViewSet(ModelViewSet):
     serializer_class = IngredientSerializer
     http_method_names = ("get",)
     permission_classes = (IsAuthenticatedOrReadOnly,)
-    # filterset_class = IngredientFilter
-    filter_backends = (filters.SearchFilter,)
+
+    filterset_class = IngredientFilter
+    filter_backends = (DjangoFilterBackend,)
     search_fields = ("name",)
-    # filter_backends = (DjangoFilterBackend,)
-    # filterset_fields = ('name',)
 
 
 class TagViewSet(ModelViewSet):
@@ -180,6 +165,7 @@ class TagViewSet(ModelViewSet):
 
 class RecipeViewSet(ModelViewSet):
     """Страница доступна всем пользователям.
+    Рецепты на всех страницах сортируются по дате публикации (новые — выше).
     Доступна фильтрация по избранному, автору, списку покупок и тегам."""
 
     queryset = Recipe.objects.all()
@@ -187,9 +173,6 @@ class RecipeViewSet(ModelViewSet):
     filterset_class = RecipeFilter
     pagination_class = CustomPageNumberPagination
     permission_classes = [IsAuthenticatedOrReadOnly]
-    # Рецепты на всех страницах сортируются по дате публикации (новые — выше).
-    filter_backends = filters.OrderingFilter
-    ordering = ("birth_year",)
 
     def get_serializer_class(self):
         """Будет использоваться сериализатор `RecipeGetSerializer`

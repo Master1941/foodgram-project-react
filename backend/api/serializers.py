@@ -20,25 +20,13 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from djoser.serializers import UserCreateSerializer, UserSerializer
-from rest_framework.serializers import (
-    IntegerField,
-    ModelSerializer,
-    PrimaryKeyRelatedField,
-    ReadOnlyField,
-    SerializerMethodField,
-    ValidationError,
-)
+from rest_framework.serializers import (IntegerField, ModelSerializer,
+                                        PrimaryKeyRelatedField, ReadOnlyField,
+                                        SerializerMethodField, ValidationError)
 
 from api.fields import Base64ImageField
-from food.models import (
-    Favourites,
-    Ingredient,
-    Recipe,
-    RecipeIngredient,
-    ShoppingList,
-    Subscription,
-    Tag,
-)
+from food.models import (Favourites, Ingredient, Recipe, RecipeIngredient,
+                         ShoppingList, Subscription, Tag)
 
 User = get_user_model()
 

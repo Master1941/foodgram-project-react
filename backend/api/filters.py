@@ -18,8 +18,9 @@ Array of strings
 Example: tags=lunch&tags=breakfast
 Показывать рецепты только с указанными тегами (по slug)
 """
-
+import django_filters
 from django.contrib.auth import get_user_model
+from django.db.models import Q
 from django_filters import FilterSet, filters
 
 from food.models import Ingredient, Recipe, Tag
@@ -62,14 +63,19 @@ class RecipeFilter(FilterSet):
         return queryset
 
 
-class IngredientFilter(FilterSet):
+class IngredientFilter(django_filters.FilterSet):
     """Ищите ингредиенты по полю name регистронезависимо:
     по вхождению в начало названия,
     по вхождению в произвольном месте.
     Сортировка в таком случае должна быть от первых ко вторым."""
 
-    name = filters.CharFilter(lookup_expr='istartswith')
+    name = django_filters.CharFilter(method="filter_by_name")
 
     class Meta:
         model = Ingredient
-        fields = ("name",)
+        fields = ["name"]
+
+    def filter_by_name(self, queryset, name, value):
+        return queryset.filter(
+            Q(name__istartswith=value) | Q(name__icontains=value)
+        )
