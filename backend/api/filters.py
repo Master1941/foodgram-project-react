@@ -51,9 +51,9 @@ class RecipeFilter(FilterSet):
             "is_in_shopping_cart",
         )
 
-    def filter_shopping_cart(self, queryset, name, value):
+    def filter_is_in_shopping_cart(self, queryset, name, value):
         if self.request.user.is_authenticated:
-            return queryset.filter(sh_cart__user=self.request.user)
+            return queryset.filter(shopping_list__user=self.request.user)
         return queryset
 
     def filter_is_favorited(self, queryset, name, value):
@@ -68,7 +68,7 @@ class IngredientFilter(FilterSet):
     по вхождению в произвольном месте.
     Сортировка в таком случае должна быть от первых ко вторым."""
 
-    name = filters.CharFilter(method="")
+    name = filters.CharFilter(lookup_expr='istartswith')
 
     class Meta:
         model = Ingredient

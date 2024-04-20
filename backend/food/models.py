@@ -3,9 +3,16 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
-from food.constants import (COLOR_CODE_MAX_LENGTH, FIELD_MAX_AMOUNT,
-                            FIELD_MAX_TIME, FIELD_MIN_AMOUNT, FIELD_MIN_TIME,
-                            NAME_MAX_LENGTH, SLAG_LEN, UNIT_MAX_LENGTH)
+from food.constants import (
+    COLOR_CODE_MAX_LENGTH,
+    FIELD_MAX_AMOUNT,
+    FIELD_MAX_TIME,
+    FIELD_MIN_AMOUNT,
+    FIELD_MIN_TIME,
+    NAME_MAX_LENGTH,
+    SLAG_LEN,
+    UNIT_MAX_LENGTH,
+)
 
 User = get_user_model()
 
@@ -129,10 +136,14 @@ class Recipe(models.Model):
             ),
         ],
     )
+    pub_date = models.DateTimeField(
+        "Дата и время публикации",
+        auto_now_add=True,
+    )
 
     class Meta:
         default_related_name = "pecipes"
-        ordering = ("name",)
+        ordering = ("pub_date",)
         verbose_name = "Рецепт"
         verbose_name_plural = "Рецепты"
         constraints = (
@@ -177,6 +188,7 @@ class RecipeIngredient(models.Model):
     )
 
     class Meta:
+        ordering = ("recipe",)
         constraints = [
             models.UniqueConstraint(
                 fields=["ingredient", "recipe"],
@@ -203,7 +215,7 @@ class ShoppingList(models.Model):
     )
 
     class Meta:
-        ordering = ("recipe",)
+        ordering = ("user",)
         verbose_name = "Покупка"
         verbose_name_plural = "Покупки"
         default_related_name = "shopping_list"
@@ -237,6 +249,7 @@ class Subscription(models.Model):
     class Meta:
         verbose_name = "Подписка"
         verbose_name_plural = "Подписки"
+        ordering = ("user",)
         constraints = (
             models.UniqueConstraint(
                 fields=("subscribed", "user"),
@@ -269,6 +282,7 @@ class Favourites(models.Model):
     class Meta:
         verbose_name = "Избранный рецепт"
         verbose_name_plural = "Избранные рецепты"
+        ordering = ("user",)
         constraints = (
             models.UniqueConstraint(
                 fields=("user", "recipe"),
