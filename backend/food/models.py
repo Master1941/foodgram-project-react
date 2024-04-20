@@ -129,10 +129,14 @@ class Recipe(models.Model):
             ),
         ],
     )
+    pub_date = models.DateTimeField(
+        "Дата и время публикации",
+        auto_now_add=True,
+    )
 
     class Meta:
         default_related_name = "pecipes"
-        ordering = ("name",)
+        ordering = ("pub_date",)
         verbose_name = "Рецепт"
         verbose_name_plural = "Рецепты"
         constraints = (
@@ -177,6 +181,7 @@ class RecipeIngredient(models.Model):
     )
 
     class Meta:
+        ordering = ("recipe",)
         constraints = [
             models.UniqueConstraint(
                 fields=["ingredient", "recipe"],
@@ -203,7 +208,7 @@ class ShoppingList(models.Model):
     )
 
     class Meta:
-        ordering = ("recipe",)
+        ordering = ("user",)
         verbose_name = "Покупка"
         verbose_name_plural = "Покупки"
         default_related_name = "shopping_list"
@@ -237,6 +242,7 @@ class Subscription(models.Model):
     class Meta:
         verbose_name = "Подписка"
         verbose_name_plural = "Подписки"
+        ordering = ("user",)
         constraints = (
             models.UniqueConstraint(
                 fields=("subscribed", "user"),
@@ -268,7 +274,9 @@ class Favourites(models.Model):
 
     class Meta:
         verbose_name = "Избранный рецепт"
+        default_related_name = "favorite"
         verbose_name_plural = "Избранные рецепты"
+        ordering = ("user",)
         constraints = (
             models.UniqueConstraint(
                 fields=("user", "recipe"),

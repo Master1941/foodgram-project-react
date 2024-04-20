@@ -7,13 +7,11 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv("SECRET_KEY", "key")
+SECRET_KEY = os.getenv("SECRET_KEY")
 
-DEBUG = os.getenv("DEBUG", "True") == "True"
+DEBUG = os.getenv("DEBUG", "False") == "True"
 
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1 localhost").split()
-
-print(ALLOWED_HOSTS)
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -78,18 +76,17 @@ PROD_DATABASES = {
         "PORT": os.getenv("DB_PORT"),
     }
 }
-
-if os.getenv("TEST_DATABASES") == "True":
-    print("  <SQLite> " * 10)
-else:
-    print(" <PostgreSQL> " * 10)
+if os.getenv("DEBUG", "False") == "True":
+    if os.getenv("TEST_DATABASES") == "True":
+        print("  <SQLite> " * 5)
+    else:
+        print(" <PostgreSQL> " * 5)
 
 DATABASES = (
     TEST_DATABASES
     if os.getenv("TEST_DATABASES", default="False") == "True"
     else PROD_DATABASES
 )
-# print(DATABASES)
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -127,46 +124,23 @@ AUTH_USER_MODEL = "users.CustomUser"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 DJOSER = {
-    "LOGIN_FIELD": "email",  # авторизация по  email  !!!!!!!!!!!!!!!!!!!!!!!!
-    "SEND_ACTIVATION_EMAIL": False,  # Отправлять ли пользователям электронное письмо с активацией после регистрации.
-    # 'USER_ID_FIELD': 'id',
+    "LOGIN_FIELD": "email",
+    "SEND_ACTIVATION_EMAIL": False,
+
     "SERIALIZERS": {
         "user": "api.serializers.MeUsersSerializer",
         "user_create": "api.serializers.MeUserCreateSerializer",
         'current_user': "api.serializers.MeUsersSerializer",
     },
     "PERMISSIONS": {
-        'activation': ['rest_framework.permissions.AllowAny'],
-        'password_reset': ['rest_framework.permissions.AllowAny'],
-        'password_reset_confirm': ['rest_framework.permissions.AllowAny'],
-        'set_password': ['djoser.permissions.CurrentUserOrAdmin'],
-        'username_reset': ['rest_framework.permissions.AllowAny'],
-        'username_reset_confirm': ['rest_framework.permissions.AllowAny'],
-        'set_username': ['djoser.permissions.CurrentUserOrAdmin'],
-        'user_create': ['rest_framework.permissions.AllowAny'],
-        'user_delete': ['djoser.permissions.CurrentUserOrAdmin'],
-        # 'user': ['djoser.permissions.CurrentUserOrAdmin'],
-
-        #  Это разрешение позволяет только чтение для анонимных пользователей, а для текущего пользователя или администратора доступна полная работа с ресурсом.
-        'user': ['rest_framework.permissions.IsAuthenticatedOrReadOnly'],  # <<<
-        'user_list': ['rest_framework.permissions.IsAuthenticatedOrReadOnly'],  # <<
-
-        'token_create': ['rest_framework.permissions.AllowAny'],
-        'token_destroy': ['rest_framework.permissions.IsAuthenticated'],
+        'user_list': ['rest_framework.permissions.IsAuthenticatedOrReadOnly'],
     },
 }
 
 REST_FRAMEWORK = {
-    # "DEFAULT_RENDERER_CLASSES": [
-    #     # МОЖНО ОТКЛЮЧИТЬ АПИ БРАУЗЕРА (НУЖНО В РЕЛИЗЕ)
-    # ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
-    # AllowAny — всё разрешено, любой пользователь (и даже аноним) может выполнить любой запрос.
-    # IsAuthenticated — только аутентифицированные пользователи имеют доступ к API и могут выполнить любой запрос. Остальным вернётся ответ "401 Unauthorized".
-    # IsAuthenticatedOrReadOnly — то же, что и в предыдущем доступе, но анонимы могут делать запросы на чтение; запросы на создание, удаление или редактирование информации доступны только аутентифицированным пользователям.
-    # IsAdminUser — выполнение запросов запрещено всем, кроме пользователей с правами администратора, тех, для которых свойство user.is_staff равно True.
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.TokenAuthentication",
     ],

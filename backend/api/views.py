@@ -18,31 +18,21 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
-from rest_framework import filters, status
+from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework.permissions import (IsAuthenticated,
+                                        IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
-from api.filters import RecipeFilter
+from api.filters import IngredientFilter, RecipeFilter
 from api.pagination import CustomPageNumberPagination
-from api.serializers import (
-    IngredientSerializer,
-    RecipeCreatSerializer,
-    RecipeGetSerializer,
-    RecipeMinifiedSerializer,
-    SubscriptionsSerializer,
-    TagSerializer,
-)
-from food.models import (
-    Favourites,
-    Ingredient,
-    Recipe,
-    RecipeIngredient,
-    ShoppingList,
-    Subscription,
-    Tag,
-)
+from api.permissions import IsAdminAuthorOrReadOnly
+from api.serializers import (IngredientSerializer, RecipeCreatSerializer,
+                             RecipeGetSerializer, RecipeMinifiedSerializer,
+                             SubscriptionsSerializer, TagSerializer)
+from food.models import (Favourites, Ingredient, Recipe, RecipeIngredient,
+                         ShoppingList, Subscription, Tag)
 
 User = get_user_model()
 
@@ -63,7 +53,12 @@ class MeUsersViewSet(UserViewSet):
 
     pagination_class = CustomPageNumberPagination
     queryset = User.objects.all()
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticatedOrReadOnly,)
+
+    def get_permissions(self):
+        if self.action == 'me':
+            return (IsAuthenticated(),)
+        return super().get_permissions()
 
     @action(
         methods=["GET"],
@@ -98,7 +93,10 @@ class MeUsersViewSet(UserViewSet):
 
         subscribed = get_object_or_404(User, id=kwargs["id"])
         user = request.user
-
+        if user == subscribed:
+            return Response(
+                {'errors': 'На себя нельзя подписаться на самого себя'},
+                status=status.HTTP_400_BAD_REQUEST)
         if request.method == "POST":
             return self.subscribe_user(user, subscribed)
         elif request.method == "DELETE":
@@ -110,6 +108,7 @@ class MeUsersViewSet(UserViewSet):
         )
 
     def subscribe_user(self, user, subscribed):
+        """POST Подписаться на пользователя"""
 
         if not Subscription.objects.filter(
             user=user,
@@ -119,17 +118,18 @@ class MeUsersViewSet(UserViewSet):
                 user=user,
                 subscribed=subscribed,
             )
+            serializer = self.get_serializer(subscribed)
             return Response(
-                {"Подписка успешно создана."},
+                data=serializer.data,
                 status=status.HTTP_201_CREATED,
             )
-
         return Response(
             {"Автор уже в подписках."},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
     def unsubscribe_user(self, user, subscribed):
+        """DEL  Отписаться от пользователя."""
 
         if Subscription.objects.filter(
             user=user,
@@ -146,7 +146,7 @@ class MeUsersViewSet(UserViewSet):
 
         return Response(
             {"Автор не найден в иподписках"},
-            status=status.HTTP_404_NOT_FOUND,
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
 
@@ -158,8 +158,10 @@ class IngredientViewSet(ModelViewSet):
     serializer_class = IngredientSerializer
     http_method_names = ("get",)
     permission_classes = (IsAuthenticatedOrReadOnly,)
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ["name"]
+
+    filterset_class = IngredientFilter
+    filter_backends = (DjangoFilterBackend,)
+    search_fields = ("name",)
 
 
 class TagViewSet(ModelViewSet):
@@ -174,13 +176,14 @@ class TagViewSet(ModelViewSet):
 
 class RecipeViewSet(ModelViewSet):
     """Страница доступна всем пользователям.
+    Рецепты на всех страницах сортируются по дате публикации (новые — выше).
     Доступна фильтрация по избранному, автору, списку покупок и тегам."""
 
     queryset = Recipe.objects.all()
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
     pagination_class = CustomPageNumberPagination
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAdminAuthorOrReadOnly]
 
     def get_serializer_class(self):
         """Будет использоваться сериализатор `RecipeGetSerializer`
@@ -200,9 +203,9 @@ class RecipeViewSet(ModelViewSet):
         permission_classes=[IsAuthenticated],
     )
     def download_shopping_cart(self, request):
-        """Скачать файл со списком покупок. Это может быть TXT/PDF/CSV.
-        Важно, чтобы контент файла удовлетворял требованиям задания.
+        """Скачать файл TXT со списком покупок.
         Доступно только авторизованным пользователям."""
+
         user = request.user
         username = user.username
         list_ingredients = (
@@ -214,7 +217,9 @@ class RecipeViewSet(ModelViewSet):
             .annotate(amount_sum=Sum("amount"))
         )
         today_cart = date.today()
-        filename = f"{username}_shopping_list_{today_cart}.txt"  # не работает
+
+        filename = f"{username}_список_покупок_{today_cart}.txt"
+
         shopping_list = [f"Список продуктов на {today_cart}:\n \n"]
         for ingredient in list_ingredients:
             name = ingredient["ingredient__name"]
@@ -229,9 +234,18 @@ class RecipeViewSet(ModelViewSet):
 
         return response
 
-    def add_a_recipe_to_the_list(self, user, Model, recipe):
-        """Метод для добавления рецепта в список избранного или покупок."""
+    def add_a_recipe_to_the_list(self, user, Model, kwargs):
+        """Метод для добавления рецепта в список избранного или покупок.
+        При попытке добавить несуществующий рецепт в избранное
+        должен вернуться ответ со статусом 400"""
 
+        try:
+            recipe = Recipe.objects.get(id=kwargs["pk"])
+        except Recipe.DoesNotExist:
+            return Response(
+                {"detail": "Рецепт не найден"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         if not Model.objects.filter(
             user=user,
             recipe=recipe,
@@ -246,13 +260,14 @@ class RecipeViewSet(ModelViewSet):
                 status=status.HTTP_201_CREATED,
             )
         return Response(
-            {"Рецепт уже в корзине"},
+            {"detail": "Рецепт уже есть в списке покупок."},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    def delete_a_recipe_in_the_list(self, user, Model, recipe):
+    def delete_a_recipe_in_the_list(self, user, Model, kwargs):
         """Метод для удаления рецепта из списока избранного или покупок."""
 
+        recipe = get_object_or_404(Recipe, id=kwargs["pk"])
         if Model.objects.filter(
             user=user,
             recipe=recipe,
@@ -263,10 +278,12 @@ class RecipeViewSet(ModelViewSet):
             ).delete()
             return Response(
                 {"Рецепт успешно удален из избранного"},
-                status=status.HTTP_200_OK,
+                status=status.HTTP_204_NO_CONTENT,
             )
-        else:
-            return Response({"Рецепт не найден в избранном"})
+        return Response(
+            {"Рецепт не найден в избранном"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     @action(
         methods=["POST", "DELETE"],
@@ -275,19 +292,18 @@ class RecipeViewSet(ModelViewSet):
     )
     def shopping_cart(self, request, **kwargs):
         """POST  Добавить рецепт в список покупок
-        DEL     Удалить рецепт из списка покупок"""
+        DEL Удалить рецепт из списка покупок."""
 
-        recipe = get_object_or_404(Recipe, id=kwargs["pk"])
         user = request.user
         if request.method == "POST":
             return self.add_a_recipe_to_the_list(
-                recipe=recipe,
+                kwargs=kwargs,
                 user=user,
                 Model=ShoppingList,
             )
         elif request.method == "DELETE":
             return self.delete_a_recipe_in_the_list(
-                recipe=recipe,
+                kwargs=kwargs,
                 user=user,
                 Model=ShoppingList,
             )
@@ -297,28 +313,24 @@ class RecipeViewSet(ModelViewSet):
         )
 
     @action(
-        methods=[
-            "POST",
-            "DELETE",
-        ],
+        methods=["POST", "DELETE"],
         detail=True,
         permission_classes=[IsAuthenticated],
     )
     def favorite(self, request, **kwargs):
         """POST  Добавить рецепт в избранное
-        DEL  Удалить рецепт из избранного"""
+        DEL  Удалить рецепт из избранного."""
 
-        recipe = get_object_or_404(Recipe, id=kwargs["pk"])
         user = request.user
         if request.method == "POST":
             return self.add_a_recipe_to_the_list(
-                recipe=recipe,
+                kwargs=kwargs,
                 user=user,
                 Model=Favourites,
             )
         elif request.method == "DELETE":
             return self.delete_a_recipe_in_the_list(
-                recipe=recipe,
+                kwargs=kwargs,
                 user=user,
                 Model=Favourites,
             )
