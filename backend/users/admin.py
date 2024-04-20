@@ -75,7 +75,7 @@ class RecipeAdmin(admin.ModelAdmin):
     )
     # Указываем, для каких связанных моделей нужно включить такой интерфейс:
     filter_horizontal = ("ingredients",)
-    # # Добавляем вставку на страницу управления объектом модели Category:
+    # Добавляем вставку на страницу управления объектом модели Category:
     inlines = (RecipeInLine,)
 
 
