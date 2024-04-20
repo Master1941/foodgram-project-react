@@ -18,31 +18,20 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
-from rest_framework import filters, status
+from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework.permissions import (IsAuthenticated,
+                                        IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
-from api.filters import RecipeFilter
+from api.filters import IngredientFilter, RecipeFilter
 from api.pagination import CustomPageNumberPagination
-from api.serializers import (
-    IngredientSerializer,
-    RecipeCreatSerializer,
-    RecipeGetSerializer,
-    RecipeMinifiedSerializer,
-    SubscriptionsSerializer,
-    TagSerializer,
-)
-from food.models import (
-    Favourites,
-    Ingredient,
-    Recipe,
-    RecipeIngredient,
-    ShoppingList,
-    Subscription,
-    Tag,
-)
+from api.serializers import (IngredientSerializer, RecipeCreatSerializer,
+                             RecipeGetSerializer, RecipeMinifiedSerializer,
+                             SubscriptionsSerializer, TagSerializer)
+from food.models import (Favourites, Ingredient, Recipe, RecipeIngredient,
+                         ShoppingList, Subscription, Tag)
 
 User = get_user_model()
 
@@ -158,8 +147,10 @@ class IngredientViewSet(ModelViewSet):
     serializer_class = IngredientSerializer
     http_method_names = ("get",)
     permission_classes = (IsAuthenticatedOrReadOnly,)
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ["name"]
+
+    filterset_class = IngredientFilter
+    filter_backends = (DjangoFilterBackend,)
+    search_fields = ("name",)
 
 
 class TagViewSet(ModelViewSet):
@@ -174,6 +165,7 @@ class TagViewSet(ModelViewSet):
 
 class RecipeViewSet(ModelViewSet):
     """Страница доступна всем пользователям.
+    Рецепты на всех страницах сортируются по дате публикации (новые — выше).
     Доступна фильтрация по избранному, автору, списку покупок и тегам."""
 
     queryset = Recipe.objects.all()
