@@ -1,8 +1,12 @@
 import csv
+import os
 
+from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
 from food.models import Ingredient
+
+DATA_ROOT = os.path.join(settings.BASE_DIR, "data")
 
 
 class Command(BaseCommand):
@@ -10,7 +14,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         with open(
-            "../data/ingredients.csv",
+            os.path.join(DATA_ROOT, "ingredients.csv"),
             "r",
             encoding="utf-8",
         ) as file:

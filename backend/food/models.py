@@ -136,7 +136,7 @@ class Recipe(models.Model):
 
     class Meta:
         default_related_name = "pecipes"
-        ordering = ("pub_date",)
+        ordering = ("-pub_date",)
         verbose_name = "Рецепт"
         verbose_name_plural = "Рецепты"
         constraints = (
@@ -198,11 +198,13 @@ class ShoppingList(models.Model):
 
     user = models.ForeignKey(
         User,
+        related_name="shopping_list",
         verbose_name="Пользователь",
         on_delete=models.CASCADE,
     )
     recipe = models.ForeignKey(
         Recipe,
+        related_name="shopping_list",
         verbose_name="Рецепт",
         on_delete=models.CASCADE,
     )
@@ -274,6 +276,7 @@ class Favourites(models.Model):
 
     class Meta:
         verbose_name = "Избранный рецепт"
+        default_related_name = "favorite"
         verbose_name_plural = "Избранные рецепты"
         ordering = ("user",)
         constraints = (

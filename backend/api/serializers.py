@@ -125,12 +125,7 @@ class SubscriptionsSerializer(MeUsersSerializer):
     def get_recipes_count(self, obj):
         """Общее количество рецептов пользователя"""
 
-        # Получать подписки текущего пользователя
-        subscriptions = Subscription.objects.filter(user=obj)
-        # Получить список пользователей, на которых подписан пользователь
-        subscribed_users = subscriptions.values_list("subscribed", flat=True)
-        # Подсчитывайте рецепты, созданные подписанными пользователями
-        return Recipe.objects.filter(author__in=subscribed_users).count()
+        return Recipe.objects.filter(author=obj).count()
 
 
 class TagSerializer(ModelSerializer):

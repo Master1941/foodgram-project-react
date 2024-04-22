@@ -10,6 +10,7 @@
 могут быть похожи друг на друга. Избегайте дублирующегося кода.
 """
 
+from collections import defaultdict
 from datetime import date
 
 from django.contrib.auth import get_user_model
@@ -53,7 +54,12 @@ class MeUsersViewSet(UserViewSet):
 
     pagination_class = CustomPageNumberPagination
     queryset = User.objects.all()
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticatedOrReadOnly,)
+
+    def get_permissions(self):
+        if self.action == "me":
+            return (IsAuthenticated(),)
+        return super().get_permissions()
 
     @action(
         methods=["GET"],
@@ -90,8 +96,9 @@ class MeUsersViewSet(UserViewSet):
         user = request.user
         if user == subscribed:
             return Response(
-                {'errors': 'На себя нельзя подписаться на самого себя'},
-                status=status.HTTP_400_BAD_REQUEST)
+                {"errors": "На себя нельзя подписаться на самого себя"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         if request.method == "POST":
             return self.subscribe_user(user, subscribed)
         elif request.method == "DELETE":
@@ -201,8 +208,9 @@ class RecipeViewSet(ModelViewSet):
         """Скачать файл TXT со списком покупок.
         Доступно только авторизованным пользователям."""
 
+        today_cart = date.today()
+        filename = f"список_покупок_{today_cart}.txt"
         user = request.user
-        username = user.username
         list_ingredients = (
             RecipeIngredient.objects.filter(recipe__shopping_list__user=user)
             .values(
@@ -211,22 +219,23 @@ class RecipeViewSet(ModelViewSet):
             )
             .annotate(amount_sum=Sum("amount"))
         )
-        today_cart = date.today()
 
-        filename = f"{username}_список_покупок_{today_cart}.txt"
+        summed_ingredients = defaultdict(float)
+        for item in list_ingredients:
+            key = (
+                item["ingredient__name"],
+                item["ingredient__measurement_unit"],
+            )
+            summed_ingredients[key] += item["amount_sum"]
 
         shopping_list = [f"Список продуктов на {today_cart}:\n \n"]
-        for ingredient in list_ingredients:
-            name = ingredient["ingredient__name"]
-            amount = ingredient["amount_sum"]
-            unit = ingredient["ingredient__measurement_unit"]
-            shopping_list.append(f"{name}: {amount} {unit}\n")
-        response = HttpResponse(
-            shopping_list,
-            content_type="text/plain",
-        )
-        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        for key, value in summed_ingredients.items():
+            name = key[0]
+            unit = key[1]
+            shopping_list.append(f"{name}: {value} {unit}\n")
 
+        response = HttpResponse(shopping_list, content_type="text/plain")
+        response["Content-Disposition"] = f"attachment; filename={filename}"
         return response
 
     def add_a_recipe_to_the_list(self, user, Model, kwargs):
