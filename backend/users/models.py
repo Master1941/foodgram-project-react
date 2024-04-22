@@ -1,18 +1,3 @@
-"""Обязательные поля для пользователя:
-
-логин, (string <= 150 characters
-пароль,
-email,
-имя,
-фамилия.
-
-Уровни доступа пользователей:
-
-гость (неавторизованный пользователь),
-авторизованный пользователь,
-администратор.
-"""
-
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator
 from django.db import models

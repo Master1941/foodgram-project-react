@@ -24,7 +24,6 @@ class Command(BaseCommand):
             for row in csv_reader:
                 try:
                     recipe, created = RecipeIngredient.objects.get_or_create(
-                        # id=row["id"],
                         amount=float(row["amount"]),
                         recipe_id=row["recipe_id"],
                         ingredient_id=row["ingredient_id"],
@@ -38,8 +37,8 @@ class Command(BaseCommand):
                 except IntegrityError:
                     self.stdout.write(
                         self.style.ERROR(
-                            f"""RecipeIngredient "{row["recipe_id"]}" не удалось
-                                 добавить,
+                            f"""RecipeIngredient "{row["recipe_id"]}"
+                              не удалось добавить,
                                  так как он уже существует"""
                         )
                     )

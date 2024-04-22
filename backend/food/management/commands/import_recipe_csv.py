@@ -16,7 +16,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         try:
             with open(
-                os.path.join(DATA_ROOT,"recipe.csv"),
+                os.path.join(DATA_ROOT, "recipe.csv"),
                 "r",
                 encoding="utf-8",
             ) as file:
@@ -32,8 +32,11 @@ class Command(BaseCommand):
                             cooking_time=row["cooking_time"],
                         )
                         if created:
+
                             self.stdout.write(
-                                self.style.SUCCESS(f'recipe "{recipe.name}" создан')
+                                self.style.SUCCESS(
+                                    f'recipe "{recipe.name}" создан'
+                                )
                             )
                         else:
                             self.stdout.write(

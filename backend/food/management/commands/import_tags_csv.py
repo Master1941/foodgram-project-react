@@ -29,14 +29,12 @@ class Command(BaseCommand):
                             color=row["color"],
                             slug=row["slug"],
                         )
-                        # if created:
-                        self.stdout.write(
-                            self.style.SUCCESS(f'tags "{tags.name}" создан')
-                        )
-                        # else:
-                        #     self.stdout.write(
-                        #         self.style.WARNING(f'tags "{tags.name}" уже существуют')
-                        #     )
+                        if created:
+                            self.stdout.write(
+                                self.style.SUCCESS(
+                                    f'tags "{tags.name}" создан'
+                                )
+                            )
                     except IntegrityError:
                         self.stdout.write(
                             self.style.ERROR(
@@ -44,6 +42,5 @@ class Command(BaseCommand):
                                   добавить, так как он уже существует"""
                             )
                         )
-
         except Exception as e:
             raise CommandError(f"Error importing tags data: {e}")

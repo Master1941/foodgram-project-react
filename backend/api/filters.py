@@ -1,23 +1,3 @@
-"""
-is_favorited
-integer
-Enum: 0 1
-Показывать только рецепты, находящиеся в списке избранного.
-
-is_in_shopping_cart
-integer
-Enum: 0 1
-Показывать только рецепты, находящиеся в списке покупок.
-
-author
-integer
-Показывать рецепты только автора с указанным id.
-
-tags
-Array of strings
-Example: tags=lunch&tags=breakfast
-Показывать рецепты только с указанными тегами (по slug)
-"""
 import django_filters
 from django.contrib.auth import get_user_model
 from django.db.models import Q

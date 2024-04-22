@@ -1,15 +1,4 @@
-"""
-Вьюсеты
-Если вы решите использовать вьюсеты,
-то вам потребуется добавлять дополнительные action.
-
-Не забывайте о том, что для разных action сериализаторы и
-уровни доступа (permissions) могут отличаться.
-
-Некоторые методы, в том числе и action,
-могут быть похожи друг на друга. Избегайте дублирующегося кода.
-"""
-
+from collections import defaultdict
 from datetime import date
 
 from django.contrib.auth import get_user_model
@@ -56,7 +45,7 @@ class MeUsersViewSet(UserViewSet):
     permission_classes = (IsAuthenticatedOrReadOnly,)
 
     def get_permissions(self):
-        if self.action == 'me':
+        if self.action == "me":
             return (IsAuthenticated(),)
         return super().get_permissions()
 
@@ -95,8 +84,9 @@ class MeUsersViewSet(UserViewSet):
         user = request.user
         if user == subscribed:
             return Response(
-                {'errors': 'На себя нельзя подписаться на самого себя'},
-                status=status.HTTP_400_BAD_REQUEST)
+                {"errors": "На себя нельзя подписаться на самого себя"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         if request.method == "POST":
             return self.subscribe_user(user, subscribed)
         elif request.method == "DELETE":
@@ -183,7 +173,8 @@ class RecipeViewSet(ModelViewSet):
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
     pagination_class = CustomPageNumberPagination
-    permission_classes = [IsAdminAuthorOrReadOnly]
+    permission_classes = [IsAdminAuthorOrReadOnly,
+                          IsAuthenticatedOrReadOnly,]
 
     def get_serializer_class(self):
         """Будет использоваться сериализатор `RecipeGetSerializer`
@@ -206,8 +197,9 @@ class RecipeViewSet(ModelViewSet):
         """Скачать файл TXT со списком покупок.
         Доступно только авторизованным пользователям."""
 
+        today_cart = date.today()
+
         user = request.user
-        username = user.username
         list_ingredients = (
             RecipeIngredient.objects.filter(recipe__shopping_list__user=user)
             .values(
@@ -216,22 +208,24 @@ class RecipeViewSet(ModelViewSet):
             )
             .annotate(amount_sum=Sum("amount"))
         )
-        today_cart = date.today()
 
-        filename = f"{username}_список_покупок_{today_cart}.txt"
+        summed_ingredients = defaultdict(float)
+        for item in list_ingredients:
+            key = (
+                item["ingredient__name"],
+                item["ingredient__measurement_unit"],
+            )
+            summed_ingredients[key] += item["amount_sum"]
 
         shopping_list = [f"Список продуктов на {today_cart}:\n \n"]
-        for ingredient in list_ingredients:
-            name = ingredient["ingredient__name"]
-            amount = ingredient["amount_sum"]
-            unit = ingredient["ingredient__measurement_unit"]
-            shopping_list.append(f"{name}: {amount} {unit}\n")
-        response = HttpResponse(
-            shopping_list,
-            content_type="text/plain",
-        )
-        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        for key, value in summed_ingredients.items():
+            name = key[0]
+            unit = key[1]
+            shopping_list.append(f"{name}: {value} {unit}\n")
 
+        filename = f"список_покупок_{date.today()}.txt"
+        response = HttpResponse(shopping_list, content_type="text/plain")
+        response["Content-Disposition"] = f"attachment; filename={filename}"
         return response
 
     def add_a_recipe_to_the_list(self, user, Model, kwargs):
@@ -260,7 +254,7 @@ class RecipeViewSet(ModelViewSet):
                 status=status.HTTP_201_CREATED,
             )
         return Response(
-            {"detail": "Рецепт уже есть в списке покупок."},
+            {"detail": "Рецепт уже есть в списке покупок/избранного."},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
