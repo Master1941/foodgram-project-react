@@ -174,7 +174,7 @@ class RecipeViewSet(ModelViewSet):
     filterset_class = RecipeFilter
     pagination_class = CustomPageNumberPagination
     permission_classes = [IsAdminAuthorOrReadOnly,
-                          IsAuthenticatedOrReadOnly,]
+                          IsAuthenticatedOrReadOnly]
 
     def get_serializer_class(self):
         """Будет использоваться сериализатор `RecipeGetSerializer`

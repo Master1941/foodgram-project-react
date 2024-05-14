@@ -1,10 +1,10 @@
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from djoser.serializers import UserCreateSerializer, UserSerializer
-from rest_framework.serializers import (ImageField, IntegerField,
+from rest_framework.serializers import (IntegerField,
                                         ModelSerializer,
                                         PrimaryKeyRelatedField, ReadOnlyField,
-                                        SerializerMethodField)
+                                        SerializerMethodField, ValidationError)
 
 from api.fields import Base64ImageField
 from food.models import (Favourites, Ingredient, Recipe, RecipeIngredient,
