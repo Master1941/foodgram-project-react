@@ -28,7 +28,7 @@
    - SECRET_KEY=Key
    - ALLOWED_HOSTS=127.0.0.1 localhost
    - DEBUG=False
-   - TEST_DATABASES=True
+   - TEST_DATABASES=False
  5. В директории infra следует выполнить команды:
     ```
     docker-compose up -d

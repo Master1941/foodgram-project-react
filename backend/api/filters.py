@@ -9,7 +9,7 @@ User = get_user_model()
 
 
 class RecipeFilter(FilterSet):
-    """Фильтрация по полям is_favorited is_in_shopping_cart author tags"""
+    """Фильтрация по полям is_favorited, is_in_shopping_cart, author, tags."""
 
     tags = filters.ModelMultipleChoiceFilter(
         field_name="tags__slug",
