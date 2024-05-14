@@ -2,6 +2,8 @@ name: Main Foodgram Workflow
 
 on:
   push:
+    branches:
+      - infra
 
 jobs:
   tests:
@@ -116,7 +118,7 @@ jobs:
       - build_and_push_to_docker_hub
       # - build_frontend_and_push_to_docker_hub
       - build_gateway_and_push_to_docker_hub
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/masterм'
     steps:
     - name: Checkout repo
       uses: actions/checkout@v3
