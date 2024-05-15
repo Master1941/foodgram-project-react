@@ -133,35 +133,17 @@ DEBUG=True
 TEST_DATABASES=True  # SQLite
 ```
 Запустить docker-compose из дериктории `infra_dev`:
-
-```
+```bash
 docker-compose up
 ```
-
 После окончания сборки контейнеров выполнить миграции:
-
+```bash
+python manage.py migrate
 ```
-docker-compose exec web python manage.py migrate
-```
-
 Создать суперпользователя:
-
+```bash
+python manage.py createsuperuser
 ```
-docker-compose exec web python manage.py createsuperuser
-```
-
-Загрузить статику:
-
-```
-docker-compose exec web python manage.py collectstatic --no-input 
-```
-
-Проверить работу проекта по ссылке:
-
-```
-http://localhost/
-```
-
 
 ## Заполнить БД <a id=4></a>
 
@@ -172,15 +154,15 @@ import_tags_csv         - заполняет таблицу с тегами.
 import_all_csv   - заполняет таблицы пользователя, рецептов, тегов, ингредиентов.
 ```
 для проекта локально развернутого в контейнерах, из дериктории `infra`
-```
+```bash
 docker-compose exec backend python manage.py import_all_csv
 ```
 для проекта развернутого на сервере, из дериктории `foodgram`
-```
+```bash
 sudo docker compose -f docker-compose.production.yml import_all_csv
 ```
 для проекта развернутого локально, из дериктории `beckend`
-```
+```bash
 python manage.py import_all_csv
 ```
 ## Примеры запросов к API <a id=5></a>
