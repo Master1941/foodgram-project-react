@@ -155,8 +155,7 @@ class IngredientViewSet(ModelViewSet):
 
 
 class TagViewSet(ModelViewSet):
-    """GET Cписок тегов
-    GET Получение тега"""
+    """GET Cписок тегов, Получение тега."""
 
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
@@ -174,7 +173,7 @@ class RecipeViewSet(ModelViewSet):
     filterset_class = RecipeFilter
     pagination_class = CustomPageNumberPagination
     permission_classes = [IsAdminAuthorOrReadOnly,
-                          IsAuthenticatedOrReadOnly,]
+                          IsAuthenticatedOrReadOnly]
 
     def get_serializer_class(self):
         """Будет использоваться сериализатор `RecipeGetSerializer`
@@ -285,8 +284,7 @@ class RecipeViewSet(ModelViewSet):
         permission_classes=[IsAuthenticated],
     )
     def shopping_cart(self, request, **kwargs):
-        """POST  Добавить рецепт в список покупок
-        DEL Удалить рецепт из списка покупок."""
+        """Добавить/Удалить рецепт в список покупок."""
 
         user = request.user
         if request.method == "POST":
@@ -312,8 +310,7 @@ class RecipeViewSet(ModelViewSet):
         permission_classes=[IsAuthenticated],
     )
     def favorite(self, request, **kwargs):
-        """POST  Добавить рецепт в избранное
-        DEL  Удалить рецепт из избранного."""
+        """Добавить/Удалить рецепт в избранное."""
 
         user = request.user
         if request.method == "POST":

@@ -6,7 +6,4 @@ class CustomPageNumberPagination(PageNumberPagination):
     отвечающего за количество результатов в выдаче."""
 
     page_size_query_param = "limit"
-
-    # Количество объектов на странице рецептов пользователей подписок
     page_size = 6
-    # recipes_limit	  # Количество объектов внутри поля recipes.
