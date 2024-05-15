@@ -153,9 +153,22 @@
     
     команда для заполнения из csv файла
     ```
-    docker-compose exec backend python manage.py import_tags tags.csv
+    import_ingredient_csv   - заполняет таблицу с ингредиентами
+    import_tags_csv         - заполняет таблицу с тегами
+    import_all_csv   - заполняет таблицы пользователя рецептов тегов ингредиентов
     ```
-
+    для проекта локально развернутого в контейнерах из дериктории infra
+    ```
+    docker-compose exec backend python manage.py import_all_csv
+    ```
+    для проекта развернутого на сервере из дериктории infra
+    ```
+    sudo docker compose -f docker-compose.production.yml import_all_csv
+    ```
+    для проекта развернутого локально из дериктории beckend
+    ```
+    python manage.py import_all_csv
+    ```
 
 # Автор
     Буканов Александр Михайлович
