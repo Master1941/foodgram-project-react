@@ -18,7 +18,6 @@ services:
 
   backend:
     image: master4141/foodgram_backend
-    
     env_file:
       - ./.env
     depends_on:
@@ -27,21 +26,18 @@ services:
     volumes:
       - static_Prod:/backend_static/
       - media_Prod:/app/media/
-      - docs_Prod:/app/api/docs/
+      - docs_Prod:/app/docs/
 
 
   frontend:
     image: master4141/foodgram_frontend
-
     container_name: foodgram_frontend
     command: cp -r /app/build/. /frontend_static/
     volumes:
-      - static_Prod:/frontend_static/
-      - docs_Prod:/app/docs/
+      - static_Prod:/frontend_static/    
 
   nginx:
     image: master4141/foodgram_gateway
-
     container_name: foodgram_gateway
     ports:
       - "8888:80"

@@ -31,12 +31,9 @@ class MeUsersViewSet(UserViewSet):
     Пользователи
     http://localhost/api/users/
     http://localhost/api/users/{id}/
-
     http://localhost/api/users/me/
     http://localhost/api/users/set_password/
-    Подписки
     http://localhost/api/users/subscriptions/
-    http://localhost/api/users/{id}/subscribe/
     http://localhost/api/users/{id}/subscribe/
     """
 
@@ -58,7 +55,7 @@ class MeUsersViewSet(UserViewSet):
     def subscriptions(self, request):
         """Возвращает пользователей,
         на которых подписан текущий пользователь.
-        В выдачу добавляются рецепты.."""
+        В выдачу добавляются рецепты."""
 
         user = request.user
         users_subscribed = User.objects.filter(subscribed__user=user)

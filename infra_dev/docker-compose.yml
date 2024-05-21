@@ -1,9 +1,10 @@
 version: '3.3'
 
 volumes:
-  static_value:
-  media_value:
-  db-data:
+  static_dev:
+  media_dev:
+  db_data_dev:
+  docs_dev:
 
 services:
 
@@ -11,23 +12,31 @@ services:
     build:
       context: ../frontend
       dockerfile: Dockerfile
+    container_name: frontend_Dev
+    command: cp -r /app/build/. /frontend_static/
     volumes:
-      - ../frontend/:/app/result_build/
+      - static_dev:/frontend_static
+      - docs_dev:/app/docs/
 
   nginx:
     image: nginx:1.19.3
+    container_name: nginx_Dev
     ports:
       - "80:80"
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
-      - ../frontend/build:/usr/share/nginx/html/
-      - ../docs/:/usr/share/nginx/html/api/docs/
+      - docs_dev:/usr/share/nginx/html/api/docs/
+      - static_dev:/staticfiles/
+      - media_dev:/app/media
+    depends_on:
+      - frontend
 
   db:
-    image: postgres:13.0-alpine
+    image: postgres:13
+    container_name: Postgres_Dev
+    env_file:
+      - ./.env
     ports:
       - "5432:5432"
     volumes:
-      - db-data:/var/lib/postgresql/data/
-    env_file:
-      - ./.env
+      - db_data_dev:/var/lib/postgresql/data/
