@@ -76,11 +76,6 @@ PROD_DATABASES = {
         "PORT": os.getenv("DB_PORT"),
     }
 }
-if os.getenv("DEBUG", "False") == "True":
-    if os.getenv("TEST_DATABASES") == "True":
-        print("  <SQLite> " * 5)
-    else:
-        print(" <PostgreSQL> " * 5)
 
 DATABASES = (
     TEST_DATABASES
